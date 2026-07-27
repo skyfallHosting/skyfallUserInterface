@@ -4048,7 +4048,7 @@ function library:SaveConfig(name)
             end
         end
     end
-    local json = HttpService:JSONEncode(data)
+    local json = game:GetService("HttpService"):JSONEncode(data)
     writefile(self.configFolder .. "/" .. name .. ".json", json)
 end
 
@@ -4057,7 +4057,7 @@ function library:LoadConfig(name)
     if not isfile(path) then return false end
     local ok, json = pcall(readfile, path)
     if not ok then return false end
-    local ok2, data = pcall(function() return HttpService:JSONDecode(json) end)
+    local ok2, data = pcall(function() return game:GetService("HttpService"):JSONDecode(json) end)
     if not ok2 or type(data) ~= "table" then return false end
     for flag, val in pairs(data) do
         local entry = self._flags[flag]
