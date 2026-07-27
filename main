@@ -4125,6 +4125,7 @@ function library:BuildConfigSection(tab)
 
     local configList = self:ListConfigs()
     local selectedConfig = configList[1] or ""
+    local typedName = ""
 
     local configSelector = tab:NewSelector("Config", selectedConfig, configList, function(v)
         selectedConfig = v
@@ -4132,59 +4133,67 @@ function library:BuildConfigSection(tab)
 
     local configNameBox
     configNameBox = tab:NewTextbox("Config Name", false, "new config name", nil, nil, false, false, function(text)
+        typedName = text
         selectedConfig = text
     end)
 
-    tab:NewButton("Save Config", function()
-        if selectedConfig and selectedConfig ~= "" then
-            pcall(function() self:SaveConfig(selectedConfig) end)
-            local found = false
-            for _, existing in ipairs(configList) do
-                if existing == selectedConfig then found = true; break end
-            end
-            if not found then
-                configSelector:AddOption(selectedConfig)
-                table.insert(configList, selectedConfig)
-            end
-            configSelector:SetOption(selectedConfig)
-            pcall(function() self:Notify("Saved config: " .. selectedConfig, 3) end)
+    local function getConfigName()
+        pcall(function() configNameBox:Fire() end)
+        if typedName ~= "" then return typedName end
+        return selectedConfig
+    end
+
+    local function ensureInList(name)
+        for _, existing in ipairs(configList) do
+            if existing == name then return end
         end
+        configSelector:AddOption(name)
+        table.insert(configList, name)
+    end
+
+    local function removeFromList(name)
+        configSelector:RemoveOption(name)
+        for i, v in ipairs(configList) do
+            if v == name then table.remove(configList, i); break end
+        end
+    end
+
+    tab:NewButton("Save Config", function()
+        local name = getConfigName()
+        if not name or name == "" then return end
+        pcall(function() self:SaveConfig(name) end)
+        ensureInList(name)
+        configSelector:SetOption(name)
+        selectedConfig = name
+        pcall(function() self:Notify("Saved config: " .. name, 3) end)
     end)
 
     tab:NewButton("Load Config", function()
-        if selectedConfig and selectedConfig ~= "" then
-            local ok = self:LoadConfig(selectedConfig)
-            if ok then
-                self:Notify("Loaded config: " .. selectedConfig, 3)
-            else
-                self:Notify("Failed to load: " .. selectedConfig, 3)
-            end
-        end
+        local name = getConfigName()
+        if not name or name == "" then return end
+        local ok = pcall(function() return self:LoadConfig(name) end)
+        pcall(function()
+            self:Notify(ok and ("Loaded config: " .. name) or ("Failed to load: " .. name), 3)
+        end)
     end)
 
     tab:NewButton("Delete Config", function()
-        if selectedConfig and selectedConfig ~= "" then
-            self:DeleteConfig(selectedConfig)
-            configSelector:RemoveOption(selectedConfig)
-            self:Notify("Deleted config: " .. selectedConfig, 3)
-            for i, v in ipairs(configList) do
-                if v == selectedConfig then table.remove(configList, i); break end
-            end
-            selectedConfig = configList[1] or ""
+        local name = getConfigName()
+        if not name or name == "" then return end
+        pcall(function() self:DeleteConfig(name) end)
+        removeFromList(name)
+        selectedConfig = configList[1] or ""
+        if selectedConfig ~= "" then
+            configSelector:SetOption(selectedConfig)
         end
+        pcall(function() self:Notify("Deleted config: " .. name, 3) end)
     end)
 
     tab:NewButton("Refresh Configs", function()
         local ok, newList = pcall(function() return self:ListConfigs() end)
         if ok and newList then
             for _, name in ipairs(newList) do
-                local found = false
-                for _, existing in ipairs(configList) do
-                    if existing == name then found = true; break end
-                end
-                if not found then
-                    configSelector:AddOption(name)
-                end
+                ensureInList(name)
             end
             configList = newList
         end
