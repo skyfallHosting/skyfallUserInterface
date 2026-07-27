@@ -79,8 +79,16 @@ local library = {
     title = title or "xsx " .. tostring(math.random(1,366)),
     fps = 0,
     rank = "private",
-    isMobile = isMobile
+    isMobile = isMobile,
+    accentColor = Color3.fromRGB(159, 115, 255),
+    _screenGuis = {}
 }
+
+local function accentDark(factor)
+    factor = factor or 0.67
+    local c = library.accentColor
+    return Color3.new(math.clamp(c.R * factor, 0, 1), math.clamp(c.G * factor, 0, 1), math.clamp(c.B * factor, 0, 1))
+end
 
 coroutine.wrap(function()
     RunService.RenderStepped:Connect(function(v)
@@ -192,6 +200,58 @@ function library:UnlockFps(new) -- syn only
     end
 end
 
+function library:SetAccentColor(newColor)
+    local oldColor = library.accentColor
+    library.accentColor = newColor
+    local dark67 = accentDark(0.67)
+    local dark81 = accentDark(0.81)
+
+    for _, gui in ipairs(library._screenGuis) do
+        pcall(function()
+            if not gui or not gui.Parent then return end
+            for _, desc in ipairs(gui:GetDescendants()) do
+                pcall(function()
+                    if desc:IsA("GuiObject") and desc.BackgroundColor3 == oldColor then
+                        desc.BackgroundColor3 = newColor
+                    end
+                    if (desc:IsA("TextLabel") or desc:IsA("TextButton")) and desc.TextColor3 == oldColor then
+                        desc.TextColor3 = newColor
+                    end
+                    if desc:IsA("ImageLabel") and desc.ImageColor3 == oldColor then
+                        desc.ImageColor3 = newColor
+                    end
+                    if desc:IsA("ScrollingFrame") and desc.ScrollBarImageColor3 == oldColor then
+                        desc.ScrollBarImageColor3 = newColor
+                    end
+                    if desc:IsA("UIGradient") then
+                        local kps = desc.Color.Keypoints
+                        local changed = false
+                        local newKps = {}
+                        for _, kp in ipairs(kps) do
+                            local v = kp.Value
+                            if v == oldColor then
+                                table.insert(newKps, ColorSequenceKeypoint.new(kp.Time, newColor))
+                                changed = true
+                            elseif math.abs(v.R - oldColor.R * 0.67) < 0.02 and math.abs(v.G - oldColor.G * 0.67) < 0.02 then
+                                table.insert(newKps, ColorSequenceKeypoint.new(kp.Time, dark67))
+                                changed = true
+                            elseif math.abs(v.R - oldColor.R * 0.81) < 0.02 and math.abs(v.G - oldColor.G * 0.81) < 0.02 then
+                                table.insert(newKps, ColorSequenceKeypoint.new(kp.Time, dark81))
+                                changed = true
+                            else
+                                table.insert(newKps, kp)
+                            end
+                        end
+                        if changed then
+                            desc.Color = ColorSequence.new(newKps)
+                        end
+                    end
+                end)
+            end
+        end)
+    end
+end
+
 function library:Watermark(text)
     for i,v in pairs(CoreGuiService:GetChildren()) do
         if v.Name == "watermark" then
@@ -220,6 +280,7 @@ function library:Watermark(text)
     watermark.Name = "watermark"
     watermark.Parent = CoreGuiService
     watermark.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    table.insert(library._screenGuis, watermark)
     
     watermarkLayout.Name = "watermarkLayout"
     watermarkLayout.Parent = watermark
@@ -259,7 +320,7 @@ function library:Watermark(text)
 
     bar.Name = "bar"
     bar.Parent = barFolder
-    bar.BackgroundColor3 = Color3.fromRGB(159, 115, 255)
+    bar.BackgroundColor3 = library.accentColor
     bar.BackgroundTransparency = 0
     bar.Size = UDim2.new(0, 0, 0, 1)
 
@@ -364,7 +425,7 @@ function library:Watermark(text)
     
         bar.Name = "bar"
         bar.Parent = barFolder
-        bar.BackgroundColor3 = Color3.fromRGB(159, 115, 255)
+        bar.BackgroundColor3 = library.accentColor
         bar.BackgroundTransparency = 0
         bar.Size = UDim2.new(0, 0, 0, 1)
     
@@ -490,6 +551,74 @@ function library:Watermark(text)
     return WatermarkFunctions
 end
 
+function library:ImageWatermark(imageId, config)
+    config = config or {}
+    local size = config.size or UDim2.new(0, 64, 0, 64)
+    local position = config.position or UDim2.new(1, -74, 1, -74)
+    local transparency = config.transparency or 0
+    local corner = config.corner or "bottomright"
+
+    if corner == "topleft" then
+        position = config.position or UDim2.new(0, 10, 0, 10)
+    elseif corner == "topright" then
+        position = config.position or UDim2.new(1, -74, 0, 10)
+    elseif corner == "bottomleft" then
+        position = config.position or UDim2.new(0, 10, 1, -74)
+    end
+
+    for _, v in ipairs(CoreGuiService:GetChildren()) do
+        if v.Name == "ImageWatermark" then v:Destroy() end
+    end
+
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "ImageWatermark"
+    gui.Parent = CoreGuiService
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    gui.DisplayOrder = 999
+    table.insert(library._screenGuis, gui)
+
+    local img = Instance.new("ImageLabel")
+    img.Name = "WatermarkImage"
+    img.Parent = gui
+    img.BackgroundTransparency = 1
+    img.Size = size
+    img.Position = position
+    img.Image = imageId
+    img.ImageTransparency = transparency
+    img.ScaleType = Enum.ScaleType.Fit
+
+    local ImgWmFunctions = {}
+    function ImgWmFunctions:SetImage(newId)
+        img.Image = newId
+        return ImgWmFunctions
+    end
+    function ImgWmFunctions:SetSize(newSize)
+        img.Size = newSize
+        return ImgWmFunctions
+    end
+    function ImgWmFunctions:SetPosition(newPos)
+        img.Position = newPos
+        return ImgWmFunctions
+    end
+    function ImgWmFunctions:SetTransparency(t)
+        img.ImageTransparency = t
+        return ImgWmFunctions
+    end
+    function ImgWmFunctions:Hide()
+        img.Visible = false
+        return ImgWmFunctions
+    end
+    function ImgWmFunctions:Show()
+        img.Visible = true
+        return ImgWmFunctions
+    end
+    function ImgWmFunctions:Remove()
+        gui:Destroy()
+        return ImgWmFunctions
+    end
+    return ImgWmFunctions
+end
+
 function library:InitNotifications(text, duration, callback)
     for i,v in next, CoreGuiService:GetChildren() do
         if v.name == "Notifications" then
@@ -504,6 +633,7 @@ function library:InitNotifications(text, duration, callback)
     Notifications.Name = "Notifications"
     Notifications.Parent = CoreGuiService
     Notifications.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    table.insert(library._screenGuis, Notifications)
 
     notificationsLayout.Name = "notificationsLayout"
     notificationsLayout.Parent = Notifications
@@ -562,11 +692,11 @@ function library:InitNotifications(text, duration, callback)
     
         bar.Name = "bar"
         bar.Parent = barFolder
-        bar.BackgroundColor3 = Color3.fromRGB(159, 115, 255)
+        bar.BackgroundColor3 = library.accentColor
         bar.BackgroundTransparency = 0.200
         bar.Size = UDim2.new(0, 0, 0, 1)
         if type == "notification" then
-            bar.BackgroundColor3 = Color3.fromRGB(159, 115, 255)
+            bar.BackgroundColor3 = library.accentColor
         elseif type == "alert" then
             bar.BackgroundColor3 = Color3.fromRGB(255, 246, 112)
         elseif type == "error" then
@@ -734,7 +864,7 @@ function library:Introduction()
     
     bar.Name = "bar"
     bar.Parent = barFolder
-    bar.BackgroundColor3 = Color3.fromRGB(159, 115, 255)
+    bar.BackgroundColor3 = library.accentColor
     bar.BackgroundTransparency = 0.200
     bar.Size = UDim2.new(0, 0, 0, 1)
     
@@ -756,7 +886,7 @@ function library:Introduction()
     xsxLogo.Size = UDim2.new(0, 448, 0, 150)
     xsxLogo.Visible = true
     xsxLogo.Image = "http://www.roblox.com/asset/?id=9365068051"
-    xsxLogo.ImageColor3 = Color3.fromRGB(159, 115, 255)
+    xsxLogo.ImageColor3 = library.accentColor
     xsxLogo.ImageTransparency = 1
     
     hashLogo.Name = "hashLogo"
@@ -768,7 +898,7 @@ function library:Introduction()
     hashLogo.Size = UDim2.new(0, 150, 0, 150)
     hashLogo.Visible = true
     hashLogo.Image = "http://www.roblox.com/asset/?id=9365069861"
-    hashLogo.ImageColor3 = Color3.fromRGB(159, 115, 255)
+    hashLogo.ImageColor3 = library.accentColor
     hashLogo.ImageTransparency = 1
     
     xsx.Name = "xsx"
@@ -876,6 +1006,7 @@ function library:Init(key)
     screen.Name = "screen"
     screen.Parent = CoreGuiService
     screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    table.insert(library._screenGuis, screen)
 
     edge.Name = "edge"
     edge.Parent = screen
@@ -994,7 +1125,7 @@ function library:Init(key)
 
     bar.Name = "bar"
     bar.Parent = barFolder
-    bar.BackgroundColor3 = Color3.fromRGB(159, 115, 255)
+    bar.BackgroundColor3 = library.accentColor
     bar.BackgroundTransparency = 0.200
     bar.Size = UDim2.new(0, 592, 0, 1)
     bar.BorderSizePixel = 0
@@ -1113,7 +1244,7 @@ function library:Init(key)
         page.MidImage = "http://www.roblox.com/asset/?id=3062506202"
         page.ScrollBarThickness = 1
         page.TopImage = "http://www.roblox.com/asset/?id=3062506202"
-        page.ScrollBarImageColor3 = Color3.fromRGB(159, 115, 255)
+        page.ScrollBarImageColor3 = library.accentColor
         page.Visible = false
         
         pageLayout.Name = "pageLayout"
@@ -1131,7 +1262,7 @@ function library:Init(key)
 
         if TabLibrary.IsFirst then
             page.Visible = true
-            tabButton.TextColor3 = Color3.fromRGB(159, 115, 255)
+            tabButton.TextColor3 = library.accentColor
             TabLibrary.CurrentTab = title
         end
         
@@ -1149,7 +1280,7 @@ function library:Init(key)
                     TweenService:Create(v, TweenTable["tab_text_colour"], {TextColor3 = Color3.fromRGB(170, 170, 170)}):Play()
                 end
             end
-            TweenService:Create(tabButton, TweenTable["tab_text_colour"], {TextColor3 = Color3.fromRGB(159, 115, 255)}):Play()
+            TweenService:Create(tabButton, TweenTable["tab_text_colour"], {TextColor3 = library.accentColor}):Play()
         end)
 
         local function UpdatePageSize()
@@ -1318,7 +1449,7 @@ function library:Init(key)
             end)
 
             button.MouseButton1Down:Connect(function()
-                TweenService:Create(buttonLabel, TweenTable["hover"], {TextColor3 = Color3.fromRGB(159, 115, 255)}):Play()
+                TweenService:Create(buttonLabel, TweenTable["hover"], {TextColor3 = library.accentColor}):Play()
             end)
             button.MouseButton1Up:Connect(function()
                 TweenService:Create(buttonLabel, TweenTable["hover"], {TextColor3 = Color3.fromRGB(190, 190, 190)}):Play()
@@ -1424,7 +1555,7 @@ function library:Init(key)
                     end)
         
                     button.MouseButton1Down:Connect(function()
-                        TweenService:Create(buttonLabel, TweenTable["hover"], {TextColor3 = Color3.fromRGB(159, 115, 255)}):Play()
+                        TweenService:Create(buttonLabel, TweenTable["hover"], {TextColor3 = library.accentColor}):Play()
                     end)
                     button.MouseButton1Up:Connect(function()
                         TweenService:Create(buttonLabel, TweenTable["hover"], {TextColor3 = Color3.fromRGB(190, 190, 190)}):Play()
@@ -1680,7 +1811,7 @@ function library:Init(key)
             toggleDesignCorner.Name = "toggleDesignCorner"
             toggleDesignCorner.Parent = toggleDesign
 
-            toggleDesignGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(157, 115, 255)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(106, 69, 181))}
+            toggleDesignGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, library.accentColor), ColorSequenceKeypoint.new(1, accentDark(0.67))}
             toggleDesignGradient.Rotation = 90
             toggleDesignGradient.Name = "toggleDesignGradient"
             toggleDesignGradient.Parent = toggleDesign
@@ -2423,7 +2554,7 @@ function library:Init(key)
 
                 textBoxValues.Focused:Connect(function()
                     textBoxValues:GetPropertyChangedSignal("Text"):Connect(ResizeTextBox)
-                    TweenService:Create(textbox, TweenTable["TextBox"], {BackgroundColor3 = Color3.fromRGB(159, 115, 255)}):Play()
+                    TweenService:Create(textbox, TweenTable["TextBox"], {BackgroundColor3 = library.accentColor}):Play()
                 end)
 
                 textBoxValues.FocusLost:Connect(function()
@@ -2652,7 +2783,7 @@ function library:Init(key)
                 end)
 
                 textBoxValues.Focused:Connect(function()
-                    TweenService:Create(textbox, TweenTable["TextBox"], {BackgroundColor3 = Color3.fromRGB(159, 115, 255)}):Play()
+                    TweenService:Create(textbox, TweenTable["TextBox"], {BackgroundColor3 = library.accentColor}):Play()
                 end)
 
                 textBoxValues.FocusLost:Connect(function()
@@ -2881,7 +3012,7 @@ function library:Init(key)
                 end)
 
                 textBoxValues.Focused:Connect(function()
-                    TweenService:Create(textbox, TweenTable["TextBox"], {BackgroundColor3 = Color3.fromRGB(159, 115, 255)}):Play()
+                    TweenService:Create(textbox, TweenTable["TextBox"], {BackgroundColor3 = library.accentColor}):Play()
                 end)
 
                 textBoxValues.FocusLost:Connect(function()
@@ -3120,7 +3251,7 @@ function library:Init(key)
                 optionButton.TextColor3 = Color3.fromRGB(160, 160, 160)
                 optionButton.TextSize = 14.000
                 if optionButton.Text == default then
-                    optionButton.TextColor3 = Color3.fromRGB(159, 115, 255)
+                    optionButton.TextColor3 = library.accentColor
                     callback(selectorText.Text)
                 end
 
@@ -3130,7 +3261,7 @@ function library:Init(key)
                             TweenService:Create(x, TweenTable["selector"], {TextColor3 = Color3.fromRGB(160, 160, 160)}):Play()
                         end
                     end
-                    TweenService:Create(optionButton, TweenTable["selector"], {TextColor3 = Color3.fromRGB(159, 115, 255)}):Play()
+                    TweenService:Create(optionButton, TweenTable["selector"], {TextColor3 = library.accentColor}):Play()
                     selectorText.Text = optionButton.Text
                     callback(optionButton.Text)
                 end)
@@ -3166,7 +3297,7 @@ function library:Init(key)
                 optionButton.TextColor3 = Color3.fromRGB(140, 140, 140)
                 optionButton.TextSize = 14.000
                 if optionButton.Text == default then
-                    optionButton.TextColor3 = Color3.fromRGB(159, 115, 255)
+                    optionButton.TextColor3 = library.accentColor
                     callback(selectorText.Text)
                 end
 
@@ -3176,7 +3307,7 @@ function library:Init(key)
                             TweenService:Create(x, TweenTable["selector"], {TextColor3 = Color3.fromRGB(140, 140, 140)}):Play()
                         end
                     end
-                    TweenService:Create(optionButton, TweenTable["selector"], {TextColor3 = Color3.fromRGB(159, 115, 255)}):Play()
+                    TweenService:Create(optionButton, TweenTable["selector"], {TextColor3 = library.accentColor}):Play()
                     selectorText.Text = optionButton.Text
                     callback(optionButton.Text)
                 end)
@@ -3347,7 +3478,7 @@ function library:Init(key)
             sliderIndicatorStraint.Parent = sliderIndicator
             sliderIndicatorStraint.MaxSize = Vector2.new(392, 12)
 
-            sliderIndicatorGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(159, 115, 255)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(128, 94, 208))}
+            sliderIndicatorGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, library.accentColor), ColorSequenceKeypoint.new(1, accentDark(0.81))}
             sliderIndicatorGradient.Rotation = 90
             sliderIndicatorGradient.Name = "sliderIndicatorGradient"
             sliderIndicatorGradient.Parent = sliderIndicator
@@ -3502,6 +3633,201 @@ function library:Init(key)
             return SliderFunctions
         end
         --
+        function Components:NewColorPicker(text, default, callback)
+            text = text or "Color Picker"
+            default = default or Color3.fromRGB(255, 255, 255)
+            callback = callback or function() end
+
+            local currentColor = default
+            local r, g, b = math.floor(default.R * 255), math.floor(default.G * 255), math.floor(default.B * 255)
+
+            local cpFrame = Instance.new("Frame")
+            cpFrame.Name = "colorPickerFrame"
+            cpFrame.Parent = page
+            cpFrame.BackgroundTransparency = 1
+            cpFrame.Size = UDim2.new(0, 396, 0, 100)
+            cpFrame.ClipsDescendants = true
+
+            local cpLabel = Instance.new("TextLabel")
+            cpLabel.Name = "cpLabel"
+            cpLabel.Parent = cpFrame
+            cpLabel.BackgroundTransparency = 1
+            cpLabel.Size = UDim2.new(0, 300, 0, 22)
+            cpLabel.Font = Enum.Font.Code
+            cpLabel.Text = text
+            cpLabel.TextColor3 = Color3.fromRGB(190, 190, 190)
+            cpLabel.TextSize = 14
+            cpLabel.TextXAlignment = Enum.TextXAlignment.Left
+            cpLabel.RichText = true
+            local cpLabelPad = Instance.new("UIPadding")
+            cpLabelPad.Parent = cpLabel
+            cpLabelPad.PaddingLeft = UDim.new(0, 2)
+
+            local preview = Instance.new("Frame")
+            preview.Name = "colorPreview"
+            preview.Parent = cpFrame
+            preview.Position = UDim2.new(1, -30, 0, 2)
+            preview.Size = UDim2.new(0, 18, 0, 18)
+            preview.BackgroundColor3 = currentColor
+            preview.BorderSizePixel = 0
+            local previewEdge = Instance.new("UIStroke")
+            previewEdge.Color = Color3.fromRGB(60, 60, 60)
+            previewEdge.Thickness = 1
+            previewEdge.Parent = preview
+            local previewCorner = Instance.new("UICorner")
+            previewCorner.CornerRadius = UDim.new(0, 2)
+            previewCorner.Parent = preview
+
+            local function makeChannelSlider(channel, yOff, initialVal)
+                local row = Instance.new("Frame")
+                row.Name = channel .. "Row"
+                row.Parent = cpFrame
+                row.BackgroundTransparency = 1
+                row.Position = UDim2.new(0, 0, 0, yOff)
+                row.Size = UDim2.new(0, 396, 0, 20)
+
+                local lbl = Instance.new("TextLabel")
+                lbl.Parent = row
+                lbl.BackgroundTransparency = 1
+                lbl.Size = UDim2.new(0, 20, 0, 20)
+                lbl.Position = UDim2.new(0, 2, 0, 0)
+                lbl.Font = Enum.Font.Code
+                lbl.Text = channel
+                lbl.TextColor3 = Color3.fromRGB(160, 160, 160)
+                lbl.TextSize = 13
+
+                local track = Instance.new("Frame")
+                track.Name = "track"
+                track.Parent = row
+                track.Position = UDim2.new(0, 26, 0.5, -5)
+                track.Size = UDim2.new(0, 326, 0, 10)
+                track.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                track.BorderSizePixel = 0
+                local trackCorner = Instance.new("UICorner")
+                trackCorner.CornerRadius = UDim.new(0, 2)
+                trackCorner.Parent = track
+
+                local fill = Instance.new("Frame")
+                fill.Name = "fill"
+                fill.Parent = track
+                fill.BackgroundColor3 = channel == "R" and Color3.fromRGB(255, 80, 80) or channel == "G" and Color3.fromRGB(80, 255, 80) or Color3.fromRGB(80, 80, 255)
+                fill.BorderSizePixel = 0
+                fill.Size = UDim2.new(0, (initialVal / 255) * 326, 0, 10)
+                local fillCorner = Instance.new("UICorner")
+                fillCorner.CornerRadius = UDim.new(0, 2)
+                fillCorner.Parent = fill
+
+                local valLbl = Instance.new("TextLabel")
+                valLbl.Parent = row
+                valLbl.BackgroundTransparency = 1
+                valLbl.Position = UDim2.new(0, 356, 0, 0)
+                valLbl.Size = UDim2.new(0, 38, 0, 20)
+                valLbl.Font = Enum.Font.Code
+                valLbl.Text = tostring(initialVal)
+                valLbl.TextColor3 = Color3.fromRGB(160, 160, 160)
+                valLbl.TextSize = 13
+                valLbl.TextXAlignment = Enum.TextXAlignment.Right
+
+                local hitBtn = Instance.new("TextButton")
+                hitBtn.Parent = track
+                hitBtn.BackgroundTransparency = 1
+                hitBtn.Size = UDim2.new(1, 8, 1, 10)
+                hitBtn.Position = UDim2.new(0, -4, 0, -5)
+                hitBtn.Text = ""
+                hitBtn.ZIndex = 10
+
+                return {track = track, fill = fill, valLbl = valLbl, hitBtn = hitBtn}
+            end
+
+            local rSlider = makeChannelSlider("R", 24, r)
+            local gSlider = makeChannelSlider("G", 48, g)
+            local bSlider = makeChannelSlider("B", 72, b)
+
+            local function updateColor()
+                currentColor = Color3.fromRGB(r, g, b)
+                preview.BackgroundColor3 = currentColor
+                pcall(function() callback(currentColor) end)
+            end
+
+            local function hookChannel(slider, getter, setter)
+                local dragging = false
+                local function updateFromX(posX)
+                    local rel = math.clamp((posX - slider.track.AbsolutePosition.X) / math.max(slider.track.AbsoluteSize.X, 1), 0, 1)
+                    local val = math.floor(rel * 255)
+                    setter(val)
+                    slider.fill.Size = UDim2.new(0, rel * slider.track.AbsoluteSize.X, 0, 10)
+                    slider.valLbl.Text = tostring(val)
+                    updateColor()
+                end
+
+                slider.hitBtn.InputBegan:Connect(function(inp)
+                    if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                        dragging = true
+                        updateFromX(inp.Position.X)
+                    end
+                end)
+                UserInputService.InputChanged:Connect(function(inp)
+                    if dragging and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+                        updateFromX(inp.Position.X)
+                    end
+                end)
+                UserInputService.InputEnded:Connect(function(inp)
+                    if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                        dragging = false
+                    end
+                end)
+            end
+
+            hookChannel(rSlider, function() return r end, function(v) r = v end)
+            hookChannel(gSlider, function() return g end, function(v) g = v end)
+            hookChannel(bSlider, function() return b end, function(v) b = v end)
+
+            UpdatePageSize()
+
+            local CPFunctions = {}
+            function CPFunctions:SetColor(color)
+                r = math.floor(color.R * 255)
+                g = math.floor(color.G * 255)
+                b = math.floor(color.B * 255)
+                currentColor = color
+                preview.BackgroundColor3 = color
+                rSlider.fill.Size = UDim2.new(0, (r / 255) * rSlider.track.AbsoluteSize.X, 0, 10)
+                gSlider.fill.Size = UDim2.new(0, (g / 255) * gSlider.track.AbsoluteSize.X, 0, 10)
+                bSlider.fill.Size = UDim2.new(0, (b / 255) * bSlider.track.AbsoluteSize.X, 0, 10)
+                rSlider.valLbl.Text = tostring(r)
+                gSlider.valLbl.Text = tostring(g)
+                bSlider.valLbl.Text = tostring(b)
+                return CPFunctions
+            end
+            function CPFunctions:GetColor()
+                return currentColor
+            end
+            function CPFunctions:Text(new)
+                cpLabel.Text = new or text
+                return CPFunctions
+            end
+            function CPFunctions:SetFunction(new)
+                callback = new or callback
+                return CPFunctions
+            end
+            function CPFunctions:Hide()
+                cpFrame.Visible = false
+                UpdatePageSize()
+                return CPFunctions
+            end
+            function CPFunctions:Show()
+                cpFrame.Visible = true
+                UpdatePageSize()
+                return CPFunctions
+            end
+            function CPFunctions:Remove()
+                cpFrame:Destroy()
+                UpdatePageSize()
+                return CPFunctions
+            end
+            return CPFunctions
+        end
+        --
         function Components:NewSeperator()
             local sectionFrame = Instance.new("Frame")
             local sectionLayout = Instance.new("UIListLayout")
@@ -3563,7 +3889,7 @@ function library:Init(key)
                     TweenService:Create(v, TweenTable["tab_text_colour"], {TextColor3 = Color3.fromRGB(170, 170, 170)}):Play()
                 end
             end
-            TweenService:Create(tabButton, TweenTable["tab_text_colour"], {TextColor3 = Color3.fromRGB(159, 115, 255)}):Play()
+            TweenService:Create(tabButton, TweenTable["tab_text_colour"], {TextColor3 = library.accentColor}):Play()
 
             return Components
         end
