@@ -84,8 +84,7 @@ local library = {
     icon = nil,
     cornerIcon = nil,
     _screenGuis = {},
-    _cornerGui = nil,
-    _watermarkIcon = nil
+    _cornerGui = nil
 }
 
 local function accentDark(factor)
@@ -387,25 +386,7 @@ function library:Watermark(text)
     backgroundLayout.SortOrder = Enum.SortOrder.LayoutOrder
     backgroundLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 
-    local wmIconOffset = 0
-    local wmIconImg = nil
-    if library.icon then
-        wmIconOffset = 18
-        wmIconImg = Instance.new("ImageLabel")
-        wmIconImg.Name = "wmIcon"
-        wmIconImg.Parent = background
-        wmIconImg.BackgroundTransparency = 1
-        wmIconImg.Size = UDim2.new(0, 14, 0, 14)
-        wmIconImg.Position = UDim2.new(0, 4, 0.5, -7)
-        wmIconImg.Image = library.icon
-        wmIconImg.ScaleType = Enum.ScaleType.Fit
-        wmIconImg.ImageTransparency = 1
-        wmIconImg.ZIndex = 5
-        waterPadding.PaddingLeft = UDim.new(0, 4 + wmIconOffset)
-        library._watermarkIcon = wmIconImg
-    end
-
-    local totalW = NewSize.x + 8 + wmIconOffset
+    local totalW = NewSize.x + 8
 
     CreateTween("wm", 0.24)
     CreateTween("wm_2", 0.04)
@@ -418,7 +399,6 @@ function library:Watermark(text)
         TweenService:Create(bar, TweenTable["wm"], {Size = UDim2.new(0, totalW, 0, 1)}):Play()
         wait(.1)
         TweenService:Create(waterText, TweenTable["wm"], {TextTransparency = 0}):Play()
-        if wmIconImg then TweenService:Create(wmIconImg, TweenTable["wm"], {ImageTransparency = 0}):Play() end
     end)()
 
     local WatermarkFunctions = {}
@@ -573,7 +553,7 @@ function library:Watermark(text)
         waterText.Text = new
 
         local NewSize = TextService:GetTextSize(waterText.Text, waterText.TextSize, waterText.Font, Vector2.new(math.huge, math.huge))
-        local tw = NewSize.x + 8 + wmIconOffset
+        local tw = NewSize.x + 8
         coroutine.wrap(function()
             TweenService:Create(edge, TweenTable["wm_2"], {Size = UDim2.new(0, tw + 2, 0, 26)}):Play()
             TweenService:Create(background, TweenTable["wm_2"], {Size = UDim2.new(0, tw, 0, 24)}):Play()
