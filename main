@@ -2372,7 +2372,7 @@ function library:Init(key)
             place = place or ""
             format = format or "all" -- all, numbers, lower, upper
             type = type or "small" -- small, medium, large
-            autoexec = autoexec or true
+            if autoexec == nil then autoexec = true end
             autoclear = autoclear or false
             callback = callback or function() end
 
@@ -2617,7 +2617,7 @@ function library:Init(key)
                 local TextboxFunctions = {}
                 function TextboxFunctions:Input(new)
                     new = new or textBoxValues.Text
-                    textBoxValues = new
+                    textBoxValues.Text = new
                     return TextboxFunctions
                 end
                 --
@@ -2844,7 +2844,7 @@ function library:Init(key)
                 local TextboxFunctions = {}
                 function TextboxFunctions:Input(new)
                     new = new or textBoxValues.Text
-                    textBoxValues = new
+                    textBoxValues.Text = new
                     return TextboxFunctions
                 end
                 --
@@ -3075,7 +3075,7 @@ function library:Init(key)
                 local TextboxFunctions = {}
                 function TextboxFunctions:Input(new)
                     new = new or textBoxValues.Text
-                    textBoxValues = new
+                    textBoxValues.Text = new
                     return TextboxFunctions
                 end
                 --
@@ -3292,7 +3292,7 @@ function library:Init(key)
             end
 
             local function getOpenH()
-                return (countOptions() * 20) + 26
+                return (countOptions() * 20) + 46
             end
 
             local function collapseSelector()
@@ -3385,6 +3385,10 @@ function library:Init(key)
 
                 hookOptionClick(optionButton)
 
+                local optH = countOptions() * 20
+                selectorContainer.Size = UDim2.new(0, 394, 0, optH)
+                selectorTwo.Size = UDim2.new(0, 394, 0, optH + 20)
+                selector.Size = UDim2.new(0, 396, 0, optH + 22)
                 if selectorOpen then expandSelector() end
                 return SelectorFunctions
             end
@@ -3403,6 +3407,10 @@ function library:Init(key)
                     selectorText.Text = ". . ."
                 end
 
+                local optH = countOptions() * 20
+                selectorContainer.Size = UDim2.new(0, 394, 0, optH)
+                selectorTwo.Size = UDim2.new(0, 394, 0, optH + 20)
+                selector.Size = UDim2.new(0, 396, 0, optH + 22)
                 if selectorOpen then expandSelector() end
                 return SelectorFunctions
             end
