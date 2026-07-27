@@ -4137,20 +4137,17 @@ function library:BuildConfigSection(tab)
 
     tab:NewButton("Save Config", function()
         if selectedConfig and selectedConfig ~= "" then
-            self:SaveConfig(selectedConfig)
-            self:Notify("Saved config: " .. selectedConfig, 3)
-            local newList = self:ListConfigs()
-            for _, name in ipairs(newList) do
-                local found = false
-                for _, existing in ipairs(configList) do
-                    if existing == name then found = true; break end
-                end
-                if not found then
-                    configSelector:AddOption(name)
-                end
+            pcall(function() self:SaveConfig(selectedConfig) end)
+            local found = false
+            for _, existing in ipairs(configList) do
+                if existing == selectedConfig then found = true; break end
             end
-            configList = newList
+            if not found then
+                configSelector:AddOption(selectedConfig)
+                table.insert(configList, selectedConfig)
+            end
             configSelector:SetOption(selectedConfig)
+            pcall(function() self:Notify("Saved config: " .. selectedConfig, 3) end)
         end
     end)
 
@@ -4178,18 +4175,20 @@ function library:BuildConfigSection(tab)
     end)
 
     tab:NewButton("Refresh Configs", function()
-        local newList = self:ListConfigs()
-        for _, name in ipairs(newList) do
-            local found = false
-            for _, existing in ipairs(configList) do
-                if existing == name then found = true; break end
+        local ok, newList = pcall(function() return self:ListConfigs() end)
+        if ok and newList then
+            for _, name in ipairs(newList) do
+                local found = false
+                for _, existing in ipairs(configList) do
+                    if existing == name then found = true; break end
+                end
+                if not found then
+                    configSelector:AddOption(name)
+                end
             end
-            if not found then
-                configSelector:AddOption(name)
-            end
+            configList = newList
         end
-        configList = newList
-        self:Notify("Refreshed config list", 2)
+        pcall(function() self:Notify("Refreshed config list", 2) end)
     end)
 
     return configSelector
