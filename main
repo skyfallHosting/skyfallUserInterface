@@ -12,6 +12,9 @@ local CoreGuiService = game:GetService("CoreGui")
 local ContentService = game:GetService("ContentProvider")
 local TeleportService = game:GetService("TeleportService")
 
+-- / Mobile detection
+local isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled and not UserInputService.KeyboardEnabled
+
 -- / Tween table & function
 local TweenTable = {
     Default = {
@@ -46,7 +49,7 @@ local drag = function(obj, latency)
     end
 
     obj.InputBegan:Connect(function(inp)
-        if (inp.UserInputType == Enum.UserInputType.MouseButton1) then
+        if (inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch) then
             toggled = true
             start = inp.Position
             startPos = obj.Position
@@ -59,7 +62,7 @@ local drag = function(obj, latency)
     end)
 
     obj.InputChanged:Connect(function(inp)
-        if (inp.UserInputType == Enum.UserInputType.MouseMovement) then
+        if (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
             input = inp
         end
     end)
@@ -75,7 +78,8 @@ local library = {
     version = "2.0.2",
     title = title or "xsx " .. tostring(math.random(1,366)),
     fps = 0,
-    rank = "private"
+    rank = "private",
+    isMobile = isMobile
 }
 
 coroutine.wrap(function()
@@ -887,6 +891,63 @@ function library:Init(key)
             edge.Visible = not edge.Visible
         end
     end)
+
+    if isMobile then
+        local viewport = workspace.CurrentCamera.ViewportSize
+        local scaleFactor = viewport.X < 700 and 1.5 or 1.25
+        local mobileScale = Instance.new("UIScale")
+        mobileScale.Scale = scaleFactor
+        mobileScale.Parent = edge
+
+        local menuBtn = Instance.new("TextButton")
+        menuBtn.Name = "MobileMenuToggle"
+        menuBtn.Text = "="
+        menuBtn.Font = Enum.Font.GothamBold
+        menuBtn.TextSize = 22
+        menuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        menuBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        menuBtn.BackgroundTransparency = 0.25
+        menuBtn.Size = UDim2.new(0, 46, 0, 46)
+        menuBtn.Position = UDim2.new(0, 12, 0.5, -23)
+        menuBtn.ZIndex = 9999
+        menuBtn.AutoButtonColor = false
+        menuBtn.Active = true
+        menuBtn.BorderSizePixel = 0
+        menuBtn.Parent = screen
+        pcall(function() Instance.new("UICorner", menuBtn).CornerRadius = UDim.new(0, 10) end)
+        pcall(function()
+            local s = Instance.new("UIStroke")
+            s.Color = Color3.fromRGB(80, 80, 80)
+            s.Thickness = 1
+            s.Parent = menuBtn
+        end)
+        local btnDragStart, btnStartPos, btnWasDragged
+        menuBtn.InputBegan:Connect(function(inp)
+            if inp.UserInputType == Enum.UserInputType.Touch or inp.UserInputType == Enum.UserInputType.MouseButton1 then
+                btnDragStart = inp.Position
+                btnStartPos = menuBtn.Position
+                btnWasDragged = false
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(inp)
+            if btnDragStart and (inp.UserInputType == Enum.UserInputType.Touch or inp.UserInputType == Enum.UserInputType.MouseMovement) then
+                local delta = inp.Position - btnDragStart
+                if delta.Magnitude > 10 then
+                    btnWasDragged = true
+                    menuBtn.Position = UDim2.new(btnStartPos.X.Scale, btnStartPos.X.Offset + delta.X, btnStartPos.Y.Scale, btnStartPos.Y.Offset + delta.Y)
+                end
+            end
+        end)
+        UserInputService.InputEnded:Connect(function(inp)
+            if inp.UserInputType == Enum.UserInputType.Touch or inp.UserInputType == Enum.UserInputType.MouseButton1 then
+                if btnDragStart and not btnWasDragged then
+                    edge.Visible = not edge.Visible
+                end
+                btnDragStart = nil
+                btnWasDragged = false
+            end
+        end)
+    end
 
     edgeCorner.CornerRadius = UDim.new(0, 2)
     edgeCorner.Name = "edgeCorner"
@@ -1731,9 +1792,10 @@ function library:Init(key)
             UpdatePageSize()
             --
             function ToggleFunctions:AddKeybind(default_t)
+                if isMobile then return ToggleFunctions end
                 callback_t = callback
                 default_t = default_t or Enum.KeyCode.P
-                
+
                 local keybind = Instance.new("TextButton")
                 local keybindCorner = Instance.new("UICorner")
                 local keybindBackground = Instance.new("Frame")
@@ -1836,11 +1898,12 @@ function library:Init(key)
                     end
                 end)
     
-                local ChatTextBox = Player.PlayerGui.Chat.Frame.ChatBarParentFrame.Frame.BoxFrame.Frame.ChatBar
+                local ChatTextBox
+                pcall(function() ChatTextBox = Player.PlayerGui.Chat.Frame.ChatBarParentFrame.Frame.BoxFrame.Frame.ChatBar end)
                 if UserInputService.WindowFocused then
                     UserInputService.InputBegan:Connect(function(c, p)
                         if not p then
-                            if c.KeyCode.Name == ChosenKey and not ChatTextBox:IsFocused() then
+                            if c.KeyCode.Name == ChosenKey and (not ChatTextBox or not ChatTextBox:IsFocused()) then
                                 On = not On
                                 local SizeOn = On and UDim2.new(0, 12, 0, 12) or UDim2.new(0, 0, 0, 0)
                                 local Transparency = On and 0 or 1
@@ -1893,6 +1956,16 @@ function library:Init(key)
         end
 
         function Components:NewKeybind(text, default, callback)
+            if isMobile then
+                local stub = {}
+                function stub:Fire() return stub end
+                function stub:SetFunction() return stub end
+                function stub:SetKey() return stub end
+                function stub:Text() return stub end
+                function stub:Hide() return stub end
+                function stub:Show() return stub end
+                return stub
+            end
             text = text or "keybind"
             default = default or Enum.KeyCode.P
             callback = callback or function() end
@@ -2074,7 +2147,7 @@ function library:Init(key)
             if UserInputService.WindowFocused then
                 UserInputService.InputBegan:Connect(function(c, p)
                     if not p then
-                        if c.KeyCode.Name == ChosenKey and not ChatTextBox:IsFocused() then
+                        if c.KeyCode.Name == ChosenKey and (not ChatTextBox or not ChatTextBox:IsFocused()) then
                             callback(ChosenKey)
                             return
                         end
@@ -3342,57 +3415,34 @@ function library:Init(key)
             local ValueNum = values.default
             local slideText = compare and ValueNum .. compareSign .. tostring(values.max - 1) .. suffix or ValueNum .. suffix
             sliderValue.Text = slideText
-            local function UpdateSlider()
-                TweenService:Create(sliderIndicator, TweenTable["slider_drag"], {Size = UDim2.new(0, math.clamp(Mouse.X - sliderIndicator.AbsolutePosition.X, 0, sliderBackground.AbsoluteSize.X), 0, 12)}):Play()
 
-                ValueNum = math.floor((((tonumber(values.max) - tonumber(values.min)) / sliderBackground.AbsoluteSize.X) * sliderIndicator.AbsoluteSize.X) + tonumber(values.min)) or 0.00
-
-                local slideText = compare and ValueNum .. compareSign .. tostring(values.max - 1) .. suffix or ValueNum .. suffix
-
+            local sliding = false
+            local function updateSliderFromX(posX)
+                local rel = math.clamp((posX - sliderBackground.AbsolutePosition.X) / math.max(sliderBackground.AbsoluteSize.X, 1), 0, 1)
+                ValueNum = math.floor(rel * (tonumber(values.max) - tonumber(values.min)) + tonumber(values.min))
+                TweenService:Create(sliderIndicator, TweenTable["slider_drag"], {Size = UDim2.new(0, rel * sliderBackground.AbsoluteSize.X, 0, 12)}):Play()
+                slideText = compare and ValueNum .. compareSign .. tostring(values.max - 1) .. suffix or ValueNum .. suffix
                 sliderValue.Text = slideText
-
-                pcall(function()
-                    callback(ValueNum)
-                end)
-
-                sliderValue.Text = slideText
-
-                moveconnection = Mouse.Move:Connect(function()
-                    ValueNum = math.floor((((tonumber(values.max) - tonumber(values.min)) / sliderBackground.AbsoluteSize.X) * sliderIndicator.AbsoluteSize.X) + tonumber(values.min))
-                    
-                    slideText = compare and ValueNum .. compareSign .. tostring(values.max - 1) .. suffix or ValueNum .. suffix
-                    sliderValue.Text = slideText
-
-                    pcall(function()
-                        callback(ValueNum)
-                    end)
-
-                    TweenService:Create(sliderIndicator, TweenTable["slider_drag"], {Size = UDim2.new(0, math.clamp(Mouse.X - sliderIndicator.AbsolutePosition.X, 0, sliderBackground.AbsoluteSize.X), 0, 12)}):Play()
-                    if not UserInputService.WindowFocused then
-                        moveconnection:Disconnect()
-                    end
-                end)
-
-                releaseconnection = UserInputService.InputEnded:Connect(function(Mouse_2)
-                    if Mouse_2.UserInputType == Enum.UserInputType.MouseButton1 then
-                        ValueNum = math.floor((((tonumber(values.max) - tonumber(values.min)) / sliderBackground.AbsoluteSize.X) * sliderIndicator.AbsoluteSize.X) + tonumber(values.min))
-                        
-                        slideText = compare and ValueNum .. compareSign .. tostring(values.max - 1) .. suffix or ValueNum .. suffix
-                        sliderValue.Text = slideText
-
-                        pcall(function()
-                            callback(ValueNum)
-                        end)
-
-                        TweenService:Create(sliderIndicator, TweenTable["slider_drag"], {Size = UDim2.new(0, math.clamp(Mouse.X - sliderIndicator.AbsolutePosition.X, 0, sliderBackground.AbsoluteSize.X), 0, 12)}):Play()
-                        moveconnection:Disconnect()
-                        releaseconnection:Disconnect()
-                    end
-                end)
+                pcall(function() callback(ValueNum) end)
             end
 
-            sliderButton.MouseButton1Down:Connect(function()
-                UpdateSlider()
+            sliderButton.InputBegan:Connect(function(inp)
+                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                    sliding = true
+                    updateSliderFromX(inp.Position.X)
+                end
+            end)
+
+            UserInputService.InputChanged:Connect(function(inp)
+                if sliding and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+                    updateSliderFromX(inp.Position.X)
+                end
+            end)
+
+            UserInputService.InputEnded:Connect(function(inp)
+                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                    sliding = false
+                end
             end)
 
             UpdatePageSize()
@@ -3420,7 +3470,6 @@ function library:Init(key)
                 new = new or values.min
                 values.min = new
                 slideText = compare and new .. compareSign .. tostring(values.max - 1) .. suffix or ValueNum .. suffix
-                TweenService:Create(sliderIndicator, TweenTable["slider_drag"], {Size = UDim2.new(0, math.clamp(Mouse.X - sliderIndicator.AbsolutePosition.X, 0, sliderBackground.AbsoluteSize.X), 0, 12)}):Play()
                 return SliderFunctions
             end
             --
