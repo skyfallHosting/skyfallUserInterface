@@ -81,7 +81,11 @@ local library = {
     rank = "private",
     isMobile = isMobile,
     accentColor = Color3.fromRGB(159, 115, 255),
-    _screenGuis = {}
+    icon = nil,
+    cornerIcon = nil,
+    _screenGuis = {},
+    _cornerGui = nil,
+    _watermarkIcon = nil
 }
 
 local function accentDark(factor)
@@ -198,6 +202,20 @@ function library:UnlockFps(new) -- syn only
     if syn then
         setfpscap(new)
     end
+end
+
+function library:LoadIcon(url, filename)
+    local asset = ""
+    pcall(function()
+        if typeof(getcustomasset) == "function" then
+            if not isfile(filename) then writefile(filename, game:HttpGet(url)) end
+            asset = getcustomasset(filename)
+        elseif typeof(getsynasset) == "function" then
+            if not isfile(filename) then writefile(filename, game:HttpGet(url)) end
+            asset = getsynasset(filename)
+        end
+    end)
+    return asset ~= "" and asset or nil
 end
 
 function library:SetAccentColor(newColor)
@@ -369,17 +387,38 @@ function library:Watermark(text)
     backgroundLayout.SortOrder = Enum.SortOrder.LayoutOrder
     backgroundLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 
+    local wmIconOffset = 0
+    local wmIconImg = nil
+    if library.icon then
+        wmIconOffset = 18
+        wmIconImg = Instance.new("ImageLabel")
+        wmIconImg.Name = "wmIcon"
+        wmIconImg.Parent = background
+        wmIconImg.BackgroundTransparency = 1
+        wmIconImg.Size = UDim2.new(0, 14, 0, 14)
+        wmIconImg.Position = UDim2.new(0, 4, 0.5, -7)
+        wmIconImg.Image = library.icon
+        wmIconImg.ScaleType = Enum.ScaleType.Fit
+        wmIconImg.ImageTransparency = 1
+        wmIconImg.ZIndex = 5
+        waterPadding.PaddingLeft = UDim.new(0, 4 + wmIconOffset)
+        library._watermarkIcon = wmIconImg
+    end
+
+    local totalW = NewSize.x + 8 + wmIconOffset
+
     CreateTween("wm", 0.24)
     CreateTween("wm_2", 0.04)
     coroutine.wrap(function()
         TweenService:Create(edge, TweenTable["wm"], {BackgroundTransparency = 0}):Play()
-        TweenService:Create(edge, TweenTable["wm"], {Size = UDim2.new(0, NewSize.x + 10, 0, 26)}):Play()
+        TweenService:Create(edge, TweenTable["wm"], {Size = UDim2.new(0, totalW + 2, 0, 26)}):Play()
         TweenService:Create(background, TweenTable["wm"], {BackgroundTransparency = 0}):Play()
-        TweenService:Create(background, TweenTable["wm"], {Size = UDim2.new(0, NewSize.x + 8, 0, 24)}):Play()
+        TweenService:Create(background, TweenTable["wm"], {Size = UDim2.new(0, totalW, 0, 24)}):Play()
         wait(.2)
-        TweenService:Create(bar, TweenTable["wm"], {Size = UDim2.new(0, NewSize.x + 8, 0, 1)}):Play()
+        TweenService:Create(bar, TweenTable["wm"], {Size = UDim2.new(0, totalW, 0, 1)}):Play()
         wait(.1)
         TweenService:Create(waterText, TweenTable["wm"], {TextTransparency = 0}):Play()
+        if wmIconImg then TweenService:Create(wmIconImg, TweenTable["wm"], {ImageTransparency = 0}):Play() end
     end)()
 
     local WatermarkFunctions = {}
@@ -534,11 +573,12 @@ function library:Watermark(text)
         waterText.Text = new
 
         local NewSize = TextService:GetTextSize(waterText.Text, waterText.TextSize, waterText.Font, Vector2.new(math.huge, math.huge))
+        local tw = NewSize.x + 8 + wmIconOffset
         coroutine.wrap(function()
-            TweenService:Create(edge, TweenTable["wm_2"], {Size = UDim2.new(0, NewSize.x + 10, 0, 26)}):Play()
-            TweenService:Create(background, TweenTable["wm_2"], {Size = UDim2.new(0, NewSize.x + 8, 0, 24)}):Play()
-            TweenService:Create(bar, TweenTable["wm_2"], {Size = UDim2.new(0, NewSize.x + 8, 0, 1)}):Play()
-            TweenService:Create(waterText, TweenTable["wm_2"], {Size = UDim2.new(0, NewSize.x + 8, 0, 1)}):Play()
+            TweenService:Create(edge, TweenTable["wm_2"], {Size = UDim2.new(0, tw + 2, 0, 26)}):Play()
+            TweenService:Create(background, TweenTable["wm_2"], {Size = UDim2.new(0, tw, 0, 24)}):Play()
+            TweenService:Create(bar, TweenTable["wm_2"], {Size = UDim2.new(0, tw, 0, 1)}):Play()
+            TweenService:Create(waterText, TweenTable["wm_2"], {Size = UDim2.new(0, tw, 0, 1)}):Play()
         end)()
 
         return WatermarkFunctions
@@ -1119,6 +1159,19 @@ function library:Init(key)
     headerPadding.PaddingLeft = UDim.new(0, 12)
     headerPadding.PaddingRight = UDim.new(0, 6)
     headerPadding.PaddingTop = UDim.new(0, 6)
+
+    if library.icon then
+        local headerIcon = Instance.new("ImageLabel")
+        headerIcon.Name = "headerIcon"
+        headerIcon.Parent = background
+        headerIcon.BackgroundTransparency = 1
+        headerIcon.Size = UDim2.new(0, 22, 0, 22)
+        headerIcon.Position = UDim2.new(0, 8, 0, 8)
+        headerIcon.Image = library.icon
+        headerIcon.ScaleType = Enum.ScaleType.Fit
+        headerIcon.ZIndex = 5
+        headerPadding.PaddingLeft = UDim.new(0, 36)
+    end
 
     barFolder.Name = "barFolder"
     barFolder.Parent = background
