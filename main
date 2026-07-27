@@ -3266,11 +3266,59 @@ function library:Init(key)
             selectorTwoLayout_2.SortOrder = Enum.SortOrder.LayoutOrder
 
             CreateTween("selector", 0.08)
+            CreateTween("selector_drop", 0.15)
 
-            selectorContainer.ChildAdded:Connect(UpdatePageSize)
-            selectorContainer.ChildAdded:Connect(UpdatePageSize)
+            local selectorArrow = Instance.new("TextLabel")
+            selectorArrow.Name = "selectorArrow"
+            selectorArrow.Parent = selectorTwo
+            selectorArrow.BackgroundTransparency = 1
+            selectorArrow.Size = UDim2.new(0, 20, 0, 20)
+            selectorArrow.Position = UDim2.new(1, -22, 0, 0)
+            selectorArrow.Font = Enum.Font.Code
+            selectorArrow.Text = "▼"
+            selectorArrow.TextColor3 = Color3.fromRGB(120, 120, 120)
+            selectorArrow.TextSize = 10
+            selectorArrow.ZIndex = 5
 
-            UpdatePageSize()
+            local selectorOpen = false
+            local closedH = 46
+
+            local function countOptions()
+                local c = 0
+                for _, child in ipairs(selectorContainer:GetChildren()) do
+                    if child:IsA("TextButton") then c = c + 1 end
+                end
+                return c
+            end
+
+            local function getOpenH()
+                return (countOptions() * 20) + 26
+            end
+
+            local function collapseSelector()
+                selectorOpen = false
+                selectorArrow.Text = "▼"
+                TweenService:Create(selectorFrame, TweenTable["selector_drop"], {Size = UDim2.new(0, 396, 0, closedH)}):Play()
+                task.delay(0.15, UpdatePageSize)
+            end
+
+            local function expandSelector()
+                selectorOpen = true
+                selectorArrow.Text = "▲"
+                local h = getOpenH()
+                local optH = countOptions() * 20
+                selectorContainer.Size = UDim2.new(0, 394, 0, optH)
+                selectorTwo.Size = UDim2.new(0, 394, 0, optH + 20)
+                selector.Size = UDim2.new(0, 396, 0, optH + 22)
+                TweenService:Create(selectorFrame, TweenTable["selector_drop"], {Size = UDim2.new(0, 396, 0, h)}):Play()
+                task.delay(0.15, UpdatePageSize)
+            end
+
+            local function toggleSelector()
+                if selectorOpen then collapseSelector() else expandSelector() end
+            end
+
+            selector.MouseButton1Click:Connect(toggleSelector)
 
             local Amount = #list
             local Val = (Amount * 20)
@@ -3278,6 +3326,21 @@ function library:Init(key)
                 Amount = #list
                 Val = (Amount * 20) + 20
             end
+
+            local function hookOptionClick(optionButton)
+                optionButton.MouseButton1Click:Connect(function()
+                    for z,x in next, selectorContainer:GetChildren() do
+                        if x:IsA("TextButton") then
+                            TweenService:Create(x, TweenTable["selector"], {TextColor3 = Color3.fromRGB(160, 160, 160)}):Play()
+                        end
+                    end
+                    TweenService:Create(optionButton, TweenTable["selector"], {TextColor3 = library.accentColor}):Play()
+                    selectorText.Text = optionButton.Text
+                    callback(optionButton.Text)
+                    collapseSelector()
+                end)
+            end
+
             for i,v in next, list do
                 local optionButton = Instance.new("TextButton")
 
@@ -3296,37 +3359,19 @@ function library:Init(key)
                     callback(selectorText.Text)
                 end
 
-                optionButton.MouseButton1Click:Connect(function()
-                    for z,x in next, selectorContainer:GetChildren() do
-                        if x:IsA("TextButton") then
-                            TweenService:Create(x, TweenTable["selector"], {TextColor3 = Color3.fromRGB(160, 160, 160)}):Play()
-                        end
-                    end
-                    TweenService:Create(optionButton, TweenTable["selector"], {TextColor3 = library.accentColor}):Play()
-                    selectorText.Text = optionButton.Text
-                    callback(optionButton.Text)
-                end)
-
-                selectorContainer.Size = UDim2.new(0, 394, 0, Val)
-                selectorTwo.Size = UDim2.new(0, 394, 0, Val)
-                selector.Size = UDim2.new(0, 396, 0, Val + 2)
-                selectorFrame.Size = UDim2.new(0, 396, 0, Val + 26)
-
-                UpdatePageSize()
-                checkSizes()
+                hookOptionClick(optionButton)
             end
+
+            selectorFrame.Size = UDim2.new(0, 396, 0, closedH)
+            UpdatePageSize()
 
             UpdatePageSize()
             local SelectorFunctions = {}
-            local AddAmount = 0
             function SelectorFunctions:AddOption(new, callback_f)
                 new = new or "option"
                 list[new] = new
 
                 local optionButton = Instance.new("TextButton")
-
-                AddAmount = AddAmount + 20
-
                 optionButton.Name = "optionButton"
                 optionButton.Parent = selectorContainer
                 optionButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -3337,30 +3382,10 @@ function library:Init(key)
                 optionButton.Text = new
                 optionButton.TextColor3 = Color3.fromRGB(140, 140, 140)
                 optionButton.TextSize = 14.000
-                if optionButton.Text == default then
-                    optionButton.TextColor3 = library.accentColor
-                    callback(selectorText.Text)
-                end
 
-                optionButton.MouseButton1Click:Connect(function()
-                    for z,x in next, selectorContainer:GetChildren() do
-                        if x:IsA("TextButton") then
-                            TweenService:Create(x, TweenTable["selector"], {TextColor3 = Color3.fromRGB(140, 140, 140)}):Play()
-                        end
-                    end
-                    TweenService:Create(optionButton, TweenTable["selector"], {TextColor3 = library.accentColor}):Play()
-                    selectorText.Text = optionButton.Text
-                    callback(optionButton.Text)
-                end)
+                hookOptionClick(optionButton)
 
-                checkSizes()
-                selectorContainer.Size = UDim2.new(0, 394, 0, Val + AddAmount)
-                selectorTwo.Size = UDim2.new(0, 394, 0, Val + AddAmount)
-                selector.Size = UDim2.new(0, 396, 0, (Val + AddAmount) + 2)
-                selectorFrame.Size = UDim2.new(0, 396, 0, (Val + AddAmount) + 26)
-
-                UpdatePageSize()
-                checkSizes()
+                if selectorOpen then expandSelector() end
                 return SelectorFunctions
             end
             --
@@ -3374,22 +3399,11 @@ function library:Init(key)
                     end
                 end
 
-                local count = 0
-                for _, child in ipairs(selectorContainer:GetChildren()) do
-                    if child:IsA("TextButton") then count = count + 1 end
-                end
-                local newH = count * 20
-                AddAmount = newH - Val
-                selectorContainer.Size = UDim2.new(0, 394, 0, newH)
-                selectorTwo.Size = UDim2.new(0, 394, 0, newH)
-                selector.Size = UDim2.new(0, 396, 0, newH + 2)
-                selectorFrame.Size = UDim2.new(0, 396, 0, newH + 26)
-
                 if selectorText.Text == option then
                     selectorText.Text = ". . ."
                 end
 
-                UpdatePageSize()
+                if selectorOpen then expandSelector() end
                 return SelectorFunctions
             end
             --
@@ -4018,6 +4032,13 @@ function library:RegisterFlag(name, getVal, setVal, flagType)
     self._flags[name] = {get = getVal, set = setVal, type = flagType}
 end
 
+function library:Notify(text, duration)
+    if not self._notifier then
+        self._notifier = self:InitNotifications()
+    end
+    pcall(function() self._notifier:Notify(text, duration or 3) end)
+end
+
 function library:SetConfigFolder(folder)
     self.configFolder = folder
 end
@@ -4117,7 +4138,7 @@ function library:BuildConfigSection(tab)
     tab:NewButton("Save Config", function()
         if selectedConfig and selectedConfig ~= "" then
             self:SaveConfig(selectedConfig)
-            if self._notifier then pcall(function() self._notifier:Notify("Saved config: " .. selectedConfig, 3) end) end
+            self:Notify("Saved config: " .. selectedConfig, 3)
             local newList = self:ListConfigs()
             for _, name in ipairs(newList) do
                 local found = false
@@ -4129,6 +4150,7 @@ function library:BuildConfigSection(tab)
                 end
             end
             configList = newList
+            configSelector:SetOption(selectedConfig)
         end
     end)
 
@@ -4136,9 +4158,9 @@ function library:BuildConfigSection(tab)
         if selectedConfig and selectedConfig ~= "" then
             local ok = self:LoadConfig(selectedConfig)
             if ok then
-                if self._notifier then pcall(function() self._notifier:Notify("Loaded config: " .. selectedConfig, 3) end) end
+                self:Notify("Loaded config: " .. selectedConfig, 3)
             else
-                if self._notifier then pcall(function() self._notifier:Notify("Failed to load: " .. selectedConfig, 3) end) end
+                self:Notify("Failed to load: " .. selectedConfig, 3)
             end
         end
     end)
@@ -4147,7 +4169,7 @@ function library:BuildConfigSection(tab)
         if selectedConfig and selectedConfig ~= "" then
             self:DeleteConfig(selectedConfig)
             configSelector:RemoveOption(selectedConfig)
-            if self._notifier then pcall(function() self._notifier:Notify("Deleted config: " .. selectedConfig, 3) end) end
+            self:Notify("Deleted config: " .. selectedConfig, 3)
             for i, v in ipairs(configList) do
                 if v == selectedConfig then table.remove(configList, i); break end
             end
@@ -4167,7 +4189,7 @@ function library:BuildConfigSection(tab)
             end
         end
         configList = newList
-        if self._notifier then pcall(function() self._notifier:Notify("Refreshed config list", 2) end) end
+        self:Notify("Refreshed config list", 2)
     end)
 
     return configSelector
