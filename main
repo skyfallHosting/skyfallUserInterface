@@ -84,7 +84,9 @@ local library = {
     icon = nil,
     cornerIcon = nil,
     _screenGuis = {},
-    _cornerGui = nil
+    _cornerGui = nil,
+    _flags = {},
+    configFolder = "SkyfallConfigs"
 }
 
 local function accentDark(factor)
@@ -2111,6 +2113,11 @@ function library:Init(key)
                 return ExtraKeybindFunctions and ToggleFunctions
             end
 
+            function ToggleFunctions:Flag(name)
+                library:RegisterFlag(name, function() return On end, function(v) ToggleFunctions:Set(v) end, "toggle")
+                return ToggleFunctions
+            end
+
             if default then
                 toggleDesign.Size = UDim2.new(0, 12, 0, 12)
                 toggleDesign.BackgroundTransparency = 0
@@ -3411,6 +3418,26 @@ function library:Init(key)
                 selectorFrame:Destroy()
                 return SelectorFunctions
             end
+            function SelectorFunctions:SetOption(option)
+                for _, child in ipairs(selectorContainer:GetChildren()) do
+                    if child:IsA("TextButton") then
+                        TweenService:Create(child, TweenTable["selector"], {TextColor3 = Color3.fromRGB(140, 140, 140)}):Play()
+                        if child.Text == option then
+                            TweenService:Create(child, TweenTable["selector"], {TextColor3 = library.accentColor}):Play()
+                            selectorText.Text = option
+                            pcall(function() callback(option) end)
+                        end
+                    end
+                end
+                return SelectorFunctions
+            end
+            function SelectorFunctions:GetOption()
+                return selectorText.Text
+            end
+            function SelectorFunctions:Flag(name)
+                library:RegisterFlag(name, function() return selectorText.Text end, function(v) SelectorFunctions:SetOption(v) end, "selector")
+                return SelectorFunctions
+            end
             return SelectorFunctions
         end
         --
@@ -3664,6 +3691,10 @@ function library:Init(key)
                 sliderFrame:Destroy()
                 return SliderFunctions
             end
+            function SliderFunctions:Flag(name)
+                library:RegisterFlag(name, function() return ValueNum end, function(v) SliderFunctions:Value(v); pcall(function() callback(v) end) end, "slider")
+                return SliderFunctions
+            end
             return SliderFunctions
         end
         --
@@ -3859,6 +3890,10 @@ function library:Init(key)
                 UpdatePageSize()
                 return CPFunctions
             end
+            function CPFunctions:Flag(name)
+                library:RegisterFlag(name, function() return currentColor end, function(v) CPFunctions:SetColor(v); pcall(function() callback(v) end) end, "color")
+                return CPFunctions
+            end
             return CPFunctions
         end
         --
@@ -3977,4 +4012,164 @@ function library:Init(key)
     end
     return TabLibrary
 end
+
+function library:RegisterFlag(name, getVal, setVal, flagType)
+    self._flags[name] = {get = getVal, set = setVal, type = flagType}
+end
+
+function library:SetConfigFolder(folder)
+    self.configFolder = folder
+end
+
+function library:EnsureConfigFolder()
+    local folder = self.configFolder
+    pcall(function()
+        local parts = {}
+        for part in folder:gmatch("[^/\\]+") do
+            table.insert(parts, part)
+            local path = table.concat(parts, "/")
+            if not isfolder(path) then makefolder(path) end
+        end
+    end)
+end
+
+function library:SaveConfig(name)
+    self:EnsureConfigFolder()
+    local data = {}
+    for flag, entry in pairs(self._flags) do
+        local ok, val = pcall(entry.get)
+        if ok then
+            if entry.type == "color" and typeof(val) == "Color3" then
+                data[flag] = {_type = "Color3", R = math.floor(val.R * 255), G = math.floor(val.G * 255), B = math.floor(val.B * 255)}
+            elseif entry.type == "selector" then
+                data[flag] = {_type = "string", value = tostring(val)}
+            else
+                data[flag] = val
+            end
+        end
+    end
+    local json = HttpService:JSONEncode(data)
+    writefile(self.configFolder .. "/" .. name .. ".json", json)
+end
+
+function library:LoadConfig(name)
+    local path = self.configFolder .. "/" .. name .. ".json"
+    if not isfile(path) then return false end
+    local ok, json = pcall(readfile, path)
+    if not ok then return false end
+    local ok2, data = pcall(function() return HttpService:JSONDecode(json) end)
+    if not ok2 or type(data) ~= "table" then return false end
+    for flag, val in pairs(data) do
+        local entry = self._flags[flag]
+        if entry then
+            pcall(function()
+                if type(val) == "table" and val._type == "Color3" then
+                    entry.set(Color3.fromRGB(val.R, val.G, val.B))
+                elseif type(val) == "table" and val._type == "string" then
+                    entry.set(val.value)
+                else
+                    entry.set(val)
+                end
+            end)
+        end
+    end
+    return true
+end
+
+function library:DeleteConfig(name)
+    local path = self.configFolder .. "/" .. name .. ".json"
+    if isfile(path) then
+        delfile(path)
+        return true
+    end
+    return false
+end
+
+function library:ListConfigs()
+    self:EnsureConfigFolder()
+    local configs = {}
+    local ok, files = pcall(listfiles, self.configFolder)
+    if ok and files then
+        for _, file in ipairs(files) do
+            local name = file:match("([^/\\]+)%.json$")
+            if name then table.insert(configs, name) end
+        end
+    end
+    return configs
+end
+
+function library:BuildConfigSection(tab)
+    tab:NewSection("Configs")
+
+    local configList = self:ListConfigs()
+    local selectedConfig = configList[1] or ""
+
+    local configSelector = tab:NewSelector("Config", selectedConfig, configList, function(v)
+        selectedConfig = v
+    end)
+
+    local configNameBox
+    configNameBox = tab:NewTextbox("Config Name", false, "new config name", nil, nil, false, false, function(text)
+        selectedConfig = text
+    end)
+
+    tab:NewButton("Save Config", function()
+        if selectedConfig and selectedConfig ~= "" then
+            self:SaveConfig(selectedConfig)
+            if self._notifier then pcall(function() self._notifier:Notify("Saved config: " .. selectedConfig, 3) end) end
+            local newList = self:ListConfigs()
+            for _, name in ipairs(newList) do
+                local found = false
+                for _, existing in ipairs(configList) do
+                    if existing == name then found = true; break end
+                end
+                if not found then
+                    configSelector:AddOption(name)
+                end
+            end
+            configList = newList
+        end
+    end)
+
+    tab:NewButton("Load Config", function()
+        if selectedConfig and selectedConfig ~= "" then
+            local ok = self:LoadConfig(selectedConfig)
+            if ok then
+                if self._notifier then pcall(function() self._notifier:Notify("Loaded config: " .. selectedConfig, 3) end) end
+            else
+                if self._notifier then pcall(function() self._notifier:Notify("Failed to load: " .. selectedConfig, 3) end) end
+            end
+        end
+    end)
+
+    tab:NewButton("Delete Config", function()
+        if selectedConfig and selectedConfig ~= "" then
+            self:DeleteConfig(selectedConfig)
+            configSelector:RemoveOption(selectedConfig)
+            if self._notifier then pcall(function() self._notifier:Notify("Deleted config: " .. selectedConfig, 3) end) end
+            for i, v in ipairs(configList) do
+                if v == selectedConfig then table.remove(configList, i); break end
+            end
+            selectedConfig = configList[1] or ""
+        end
+    end)
+
+    tab:NewButton("Refresh Configs", function()
+        local newList = self:ListConfigs()
+        for _, name in ipairs(newList) do
+            local found = false
+            for _, existing in ipairs(configList) do
+                if existing == name then found = true; break end
+            end
+            if not found then
+                configSelector:AddOption(name)
+            end
+        end
+        configList = newList
+        if self._notifier then pcall(function() self._notifier:Notify("Refreshed config list", 2) end) end
+    end)
+
+    return configSelector
+end
+
 return library
