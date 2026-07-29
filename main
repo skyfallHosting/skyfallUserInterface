@@ -86,6 +86,7 @@ local library = {
     _screenGuis = {},
     _cornerGui = nil,
     _flags = {},
+    _closeActivePopup = nil,
     configFolder = "SkyfallConfigs"
 }
 
@@ -1065,6 +1066,9 @@ function library:Init(key)
         if menuAnimating then return end
         menuAnimating = true
         if menuVisible then
+            if library._closeActivePopup then
+                library._closeActivePopup()
+            end
             local tw = TweenService:Create(menuScale, TweenTable["menu_hide"], {Scale = 0.92})
             tw:Play()
             tw.Completed:Connect(function()
@@ -1368,8 +1372,11 @@ function library:Init(key)
         end
         
         tabButton.MouseButton1Click:Connect(function()
+            if library._closeActivePopup then
+                library._closeActivePopup()
+            end
             TabLibrary.CurrentTab = title
-            for i,v in pairs(container:GetChildren()) do 
+            for i,v in pairs(container:GetChildren()) do
                 if v:IsA("ScrollingFrame") then
                     v.Visible = false
                 end
@@ -3402,6 +3409,7 @@ function library:Init(key)
             end
 
             local function expandSelector()
+                if library._closeActivePopup then library._closeActivePopup() end
                 selectorOpen = true
                 TweenService:Create(selectorArrow, TweenTable["chevron"], {Rotation = 180}):Play()
                 local h = getOpenH()
@@ -4041,16 +4049,26 @@ function library:Init(key)
             end
 
             local function closePopup()
+                if not pickerOpen then return end
                 pickerOpen = false
                 popup.Visible = false
+                if library._closeActivePopup == closePopup then
+                    library._closeActivePopup = nil
+                end
             end
 
             preview.MouseButton1Click:Connect(function()
-                pickerOpen = not pickerOpen
                 if pickerOpen then
+                    closePopup()
+                else
+                    if library._closeActivePopup then
+                        library._closeActivePopup()
+                    end
                     positionPopup()
+                    popup.Visible = true
+                    pickerOpen = true
+                    library._closeActivePopup = closePopup
                 end
-                popup.Visible = pickerOpen
             end)
 
             UserInputService.InputBegan:Connect(function(inp)
@@ -4071,6 +4089,7 @@ function library:Init(key)
 
             local svDragging = false
             svHit.InputBegan:Connect(function(inp)
+                if not pickerOpen then return end
                 if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
                     svDragging = true
                     cpS = math.clamp((inp.Position.X - svFrame.AbsolutePosition.X) / svSize, 0, 1)
@@ -4079,6 +4098,7 @@ function library:Init(key)
                 end
             end)
             UserInputService.InputChanged:Connect(function(inp)
+                if not pickerOpen then return end
                 if svDragging and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
                     cpS = math.clamp((inp.Position.X - svFrame.AbsolutePosition.X) / svSize, 0, 1)
                     cpV = 1 - math.clamp((inp.Position.Y - svFrame.AbsolutePosition.Y) / svSize, 0, 1)
@@ -4086,6 +4106,7 @@ function library:Init(key)
                 end
             end)
             UserInputService.InputEnded:Connect(function(inp)
+                if not pickerOpen then return end
                 if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
                     svDragging = false
                 end
@@ -4093,6 +4114,7 @@ function library:Init(key)
 
             local hueDragging = false
             hueHit.InputBegan:Connect(function(inp)
+                if not pickerOpen then return end
                 if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
                     hueDragging = true
                     cpH = math.clamp((inp.Position.Y - hueBar.AbsolutePosition.Y) / svSize, 0, 1)
@@ -4100,12 +4122,14 @@ function library:Init(key)
                 end
             end)
             UserInputService.InputChanged:Connect(function(inp)
+                if not pickerOpen then return end
                 if hueDragging and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
                     cpH = math.clamp((inp.Position.Y - hueBar.AbsolutePosition.Y) / svSize, 0, 1)
                     updateCPColor()
                 end
             end)
             UserInputService.InputEnded:Connect(function(inp)
+                if not pickerOpen then return end
                 if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
                     hueDragging = false
                 end
@@ -4646,6 +4670,8 @@ function library:Unload()
     end)
 
     pcall(function()
+        if self._closeActivePopup then self._closeActivePopup() end
+        self._closeActivePopup = nil
         if self._watermark then self._watermark = nil end
         if self._cornerWatermark then self._cornerWatermark = nil end
         if self._notifier then self._notifier = nil end
