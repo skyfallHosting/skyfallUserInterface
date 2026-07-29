@@ -1038,10 +1038,43 @@ function library:Init(key)
     edge.Size = UDim2.new(0, 594, 0, 406)
 
     drag(edge, 0.04)
+
+    local menuScale = Instance.new("UIScale")
+    menuScale.Scale = 1
+    menuScale.Parent = edge
+
+    local menuVisible = true
+    local menuAnimating = false
+    CreateTween("menu_show", 0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+    CreateTween("menu_hide", 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+
+    local function toggleMenu()
+        if menuAnimating then return end
+        menuAnimating = true
+        if menuVisible then
+            local tw = TweenService:Create(menuScale, TweenTable["menu_hide"], {Scale = 0.92})
+            tw:Play()
+            tw.Completed:Connect(function()
+                edge.Visible = false
+                menuVisible = false
+                menuAnimating = false
+            end)
+        else
+            menuScale.Scale = 0.92
+            edge.Visible = true
+            local tw = TweenService:Create(menuScale, TweenTable["menu_show"], {Scale = 1})
+            tw:Play()
+            tw.Completed:Connect(function()
+                menuVisible = true
+                menuAnimating = false
+            end)
+        end
+    end
+
     local CanChangeVisibility = true
     UserInputService.InputBegan:Connect(function(input)
         if CanChangeVisibility and input.KeyCode == key then
-            edge.Visible = not edge.Visible
+            toggleMenu()
         end
     end)
 
@@ -1094,7 +1127,7 @@ function library:Init(key)
         UserInputService.InputEnded:Connect(function(inp)
             if inp.UserInputType == Enum.UserInputType.Touch or inp.UserInputType == Enum.UserInputType.MouseButton1 then
                 if btnDragStart and not btnWasDragged then
-                    edge.Visible = not edge.Visible
+                    toggleMenu()
                 end
                 btnDragStart = nil
                 btnWasDragged = false
@@ -1241,6 +1274,25 @@ function library:Init(key)
     containerGradient.Name = "containerGradient"
     containerGradient.Parent = container
 
+    local tabIndicator = Instance.new("Frame")
+    tabIndicator.Name = "tabIndicator"
+    tabIndicator.Parent = tabButtonsEdge
+    tabIndicator.BackgroundColor3 = library.accentColor
+    tabIndicator.BorderSizePixel = 0
+    tabIndicator.Size = UDim2.new(0, 2, 0, 16)
+    tabIndicator.Position = UDim2.new(0, 1, 0, 8)
+    tabIndicator.ZIndex = 5
+    local tabIndicatorCorner = Instance.new("UICorner")
+    tabIndicatorCorner.CornerRadius = UDim.new(1, 0)
+    tabIndicatorCorner.Parent = tabIndicator
+
+    CreateTween("tab_indicator", 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+    local function moveIndicatorTo(btn)
+        local btnY = btn.AbsolutePosition.Y - tabButtonsEdge.AbsolutePosition.Y
+        TweenService:Create(tabIndicator, TweenTable["tab_indicator"], {Position = UDim2.new(0, 1, 0, btnY + 3)}):Play()
+    end
+
     local TabLibrary = {
         IsFirst = true,
         CurrentTab = ""
@@ -1299,6 +1351,7 @@ function library:Init(key)
             page.Visible = true
             tabButton.TextColor3 = library.accentColor
             TabLibrary.CurrentTab = title
+            task.defer(function() moveIndicatorTo(tabButton) end)
         end
         
         tabButton.MouseButton1Click:Connect(function()
@@ -1316,6 +1369,7 @@ function library:Init(key)
                 end
             end
             TweenService:Create(tabButton, TweenTable["tab_text_colour"], {TextColor3 = library.accentColor}):Play()
+            moveIndicatorTo(tabButton)
         end)
 
         local function UpdatePageSize()
@@ -1330,7 +1384,14 @@ function library:Init(key)
 
         CreateTween("hover", 0.16)
         local Components = {}
+        Components._page = page
+        Components._width = 396
+        Components._updateSize = UpdatePageSize
+        Components._screen = screen
         function Components:NewLabel(text, alignment)
+            local page = self._page
+            local _w = self._width
+            local UpdatePageSize = self._updateSize
             text = text or "label"
             alignment = alignment or "left"
 
@@ -1342,7 +1403,7 @@ function library:Init(key)
             label.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             label.BackgroundTransparency = 1.000
             label.Position = UDim2.new(0.00499999989, 0, 0, 0)
-            label.Size = UDim2.new(0, 396, 0, 24)
+            label.Size = UDim2.new(0, _w, 0, 24)
             label.Font = Enum.Font.Code
             label.Text = text
             label.TextColor3 = Color3.fromRGB(190, 190, 190)
@@ -1406,6 +1467,9 @@ function library:Init(key)
         end
 
         function Components:NewButton(text, callback)
+            local page = self._page
+            local _w = self._width
+            local UpdatePageSize = self._updateSize
             text = text or "button"
             callback = callback or function() end
 
@@ -1422,7 +1486,7 @@ function library:Init(key)
             buttonFrame.Parent = page
             buttonFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             buttonFrame.BackgroundTransparency = 1.000
-            buttonFrame.Size = UDim2.new(0, 396, 0, 24)
+            buttonFrame.Size = UDim2.new(0, _w, 0, 24)
 
             buttonLayout.Name = "buttonLayout"
             buttonLayout.Parent = buttonFrame
@@ -1435,7 +1499,7 @@ function library:Init(key)
             button.Name = "button"
             button.Parent = buttonFrame
             button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            button.Size = UDim2.new(0, 396, 0, 24)
+            button.Size = UDim2.new(0, _w, 0, 24)
             button.AutoButtonColor = false
             button.Font = Enum.Font.SourceSans
             button.Text = ""
@@ -1451,7 +1515,7 @@ function library:Init(key)
             buttonBackground.AnchorPoint = Vector2.new(0.5, 0.5)
             buttonBackground.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             buttonBackground.Position = UDim2.new(0.5, 0, 0.5, 0)
-            buttonBackground.Size = UDim2.new(0, 394, 0, 22)
+            buttonBackground.Size = UDim2.new(0, _w - 2, 0, 22)
 
             buttonGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(34, 34, 34)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(28, 28, 28))}
             buttonGradient.Rotation = 90
@@ -1469,7 +1533,7 @@ function library:Init(key)
             buttonLabel.BackgroundTransparency = 1.000
             buttonLabel.ClipsDescendants = true
             buttonLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
-            buttonLabel.Size = UDim2.new(0, 394, 0, 22)
+            buttonLabel.Size = UDim2.new(0, _w - 2, 0, 22)
             buttonLabel.Font = Enum.Font.Code
             buttonLabel.Text = text
             buttonLabel.TextColor3 = Color3.fromRGB(190, 190, 190)
@@ -1494,15 +1558,15 @@ function library:Init(key)
                 callback()
             end)
 
-            local NewSizeX = 396
+            local NewSizeX = _w
             local Amnt = 0
             local function ResizeButtons()
                 local Amount = buttonFrame:GetChildren()
-                local Resized = 396
+                local Resized = _w
                 Amount = #Amount - 1
                 Amnt = Amount
                 local AmountToSubtract = (Amount / 2)
-                Resized = (396 / Amount) - AmountToSubtract
+                Resized = (_w / Amount) - AmountToSubtract
                 NewSizeX = (Resized)
 
                 for i,v in pairs(buttonFrame:GetChildren()) do
@@ -1687,6 +1751,9 @@ function library:Init(key)
         --
 
         function Components:NewSection(text)
+            local page = self._page
+            local _w = self._width
+            local UpdatePageSize = self._updateSize
             text = text or "section"
 
             local sectionFrame = Instance.new("Frame")
@@ -1701,7 +1768,7 @@ function library:Init(key)
             sectionFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             sectionFrame.BackgroundTransparency = 1.000
             sectionFrame.ClipsDescendants = true
-            sectionFrame.Size = UDim2.new(0, 396, 0, 18)
+            sectionFrame.Size = UDim2.new(0, _w, 0, 18)
 
             sectionLayout.Name = "sectionLayout"
             sectionLayout.Parent = sectionFrame
@@ -1773,6 +1840,9 @@ function library:Init(key)
         --
 
         function Components:NewToggle(text, default, callback)
+            local page = self._page
+            local _w = self._width
+            local UpdatePageSize = self._updateSize
             text = text or "toggle"
             default = default or false
             callback = callback or function() end
@@ -1797,7 +1867,7 @@ function library:Init(key)
             toggleButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             toggleButton.BackgroundTransparency = 1.000
             toggleButton.ClipsDescendants = false
-            toggleButton.Size = UDim2.new(0, 396, 0, 22)
+            toggleButton.Size = UDim2.new(0, _w, 0, 22)
             toggleButton.Font = Enum.Font.Code
             toggleButton.Text = ""
             toggleButton.TextColor3 = Color3.fromRGB(190, 190, 190)
@@ -2127,6 +2197,9 @@ function library:Init(key)
         end
 
         function Components:NewKeybind(text, default, callback)
+            local page = self._page
+            local _w = self._width
+            local UpdatePageSize = self._updateSize
             if isMobile then
                 local stub = {}
                 function stub:Fire() return stub end
@@ -2163,13 +2236,13 @@ function library:Init(key)
             keybindFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             keybindFrame.BackgroundTransparency = 1.000
             keybindFrame.ClipsDescendants = true
-            keybindFrame.Size = UDim2.new(0, 396, 0, 24)
+            keybindFrame.Size = UDim2.new(0, _w, 0, 24)
 
             keybindButton.Name = "keybindButton"
             keybindButton.Parent = keybindFrame
             keybindButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             keybindButton.BackgroundTransparency = 1.000
-            keybindButton.Size = UDim2.new(0, 396, 0, 24)
+            keybindButton.Size = UDim2.new(0, _w, 0, 24)
             keybindButton.AutoButtonColor = false
             keybindButton.Font = Enum.Font.SourceSans
             keybindButton.Text = ""
@@ -2187,7 +2260,7 @@ function library:Init(key)
             keybindLabel.Parent = keybindButton
             keybindLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             keybindLabel.BackgroundTransparency = 1.000
-            keybindLabel.Size = UDim2.new(0, 396, 0, 24)
+            keybindLabel.Size = UDim2.new(0, _w, 0, 24)
             keybindLabel.Font = Enum.Font.Code
             keybindLabel.Text = text
             keybindLabel.TextColor3 = Color3.fromRGB(190, 190, 190)
@@ -2367,6 +2440,9 @@ function library:Init(key)
         end
         --
         function Components:NewTextbox(text, default, place, format, type, autoexec, autoclear, callback)
+            local page = self._page
+            local _w = self._width
+            local UpdatePageSize = self._updateSize
             text = text or "text box"
             default = default or ""
             place = place or ""
@@ -2400,7 +2476,7 @@ function library:Init(key)
                 textboxFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                 textboxFrame.BackgroundTransparency = 1.000
                 textboxFrame.ClipsDescendants = true
-                textboxFrame.Size = UDim2.new(0, 396, 0, 24)
+                textboxFrame.Size = UDim2.new(0, _w, 0, 24)
     
                 textboxFolder.Name = "textboxFolder"
                 textboxFolder.Parent = textboxFrame
@@ -2487,7 +2563,7 @@ function library:Init(key)
                 textboxLabel.Parent = textboxFrame
                 textboxLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                 textboxLabel.BackgroundTransparency = 1.000
-                textboxLabel.Size = UDim2.new(0, 396, 0, 24)
+                textboxLabel.Size = UDim2.new(0, _w, 0, 24)
                 textboxLabel.Font = Enum.Font.Code
                 textboxLabel.Text = text
                 textboxLabel.TextColor3 = Color3.fromRGB(190, 190, 190)
@@ -2530,19 +2606,19 @@ function library:Init(key)
                 end
                 function ResizeTextBox()
                     NewTextboxSize = TextService:GetTextSize(textBoxValues.Text, textBoxValues.TextSize, textBoxValues.Font, Vector2.new(math.huge,math.huge))
-                    if NewTextboxSize.X < (396 - ForcedMaxSize.X) - 10 then
+                    if NewTextboxSize.X < (_w - ForcedMaxSize.X) - 10 then
                         TweenService:Create(textBoxValues, TweenTable["TextBox"], {Size = UDim2.new(0, NewTextboxSize.X + 8, 0, 20)}):Play()
                         TweenService:Create(textboxTwo, TweenTable["TextBox"], {Size = UDim2.new(0, NewTextboxSize.X + 8, 0, 20)}):Play()
                         TweenService:Create(textbox, TweenTable["TextBox"], {Size = UDim2.new(0, NewTextboxSize.X + 10, 0, 22)}):Play()
                     else
-                        TweenService:Create(textBoxValues, TweenTable["TextBox"], {Size = UDim2.new(0, (396 - ForcedMaxSize.X) - 12, 0, 20)}):Play()
-                        TweenService:Create(textboxTwo, TweenTable["TextBox"], {Size = UDim2.new(0, (396 - ForcedMaxSize.X) - 12, 0, 20)}):Play()
-                        TweenService:Create(textbox, TweenTable["TextBox"], {Size = UDim2.new(0, (396 - ForcedMaxSize.X) - 10, 0, 22)}):Play()
+                        TweenService:Create(textBoxValues, TweenTable["TextBox"], {Size = UDim2.new(0, (_w - ForcedMaxSize.X) - 12, 0, 20)}):Play()
+                        TweenService:Create(textboxTwo, TweenTable["TextBox"], {Size = UDim2.new(0, (_w - ForcedMaxSize.X) - 12, 0, 20)}):Play()
+                        TweenService:Create(textbox, TweenTable["TextBox"], {Size = UDim2.new(0, (_w - ForcedMaxSize.X) - 10, 0, 22)}):Play()
                     end
                 end
                 function SetMaxSize()
                     ForcedMaxSize = TextService:GetTextSize(textboxLabel.Text, textboxLabel.TextSize, textboxLabel.Font, Vector2.new(math.huge,math.huge))
-                    local def = 396 - ForcedMaxSize.X
+                    local def = _w - ForcedMaxSize.X
                     textboxStraint.MaxSize = Vector2.new(def - 10, 22)
                     textboxTwoStraint.MaxSize = Vector2.new(def - 12, 20)
                     textBoxValuesStraint.MaxSize = Vector2.new(def - 12, 20)
@@ -2683,7 +2759,7 @@ function library:Init(key)
                 textboxFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                 textboxFrame.BackgroundTransparency = 1.000
                 textboxFrame.ClipsDescendants = true
-                textboxFrame.Size = UDim2.new(0, 396, 0, 46)
+                textboxFrame.Size = UDim2.new(0, _w, 0, 46)
 
                 textboxFolder.Name = "textboxFolder"
                 textboxFolder.Parent = textboxFrame
@@ -2699,7 +2775,7 @@ function library:Init(key)
                 textbox.Name = "textbox"
                 textbox.Parent = textboxFolder
                 textbox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-                textbox.Size = UDim2.new(0, 396, 0, 22)
+                textbox.Size = UDim2.new(0, _w, 0, 22)
 
                 textboxLayout.Name = "textboxLayout"
                 textboxLayout.Parent = textbox
@@ -2709,8 +2785,8 @@ function library:Init(key)
 
                 textboxStraint.Name = "textboxStraint"
                 textboxStraint.Parent = textbox
-                textboxStraint.MaxSize = Vector2.new(396, 22)
-                textboxStraint.MinSize = Vector2.new(396, 22)
+                textboxStraint.MaxSize = Vector2.new(_w, 22)
+                textboxStraint.MinSize = Vector2.new(_w, 22)
 
                 textboxCorner.CornerRadius = UDim.new(0, 2)
                 textboxCorner.Name = "textboxCorner"
@@ -2719,12 +2795,12 @@ function library:Init(key)
                 textboxTwo.Name = "textboxTwo"
                 textboxTwo.Parent = textbox
                 textboxTwo.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-                textboxTwo.Size = UDim2.new(0, 394, 0, 20)
+                textboxTwo.Size = UDim2.new(0, _w - 2, 0, 20)
 
                 textboxTwoStraint.Name = "textboxTwoStraint"
                 textboxTwoStraint.Parent = textboxTwo
-                textboxTwoStraint.MaxSize = Vector2.new(394, 20)
-                textboxTwoStraint.MinSize = Vector2.new(394, 20)
+                textboxTwoStraint.MaxSize = Vector2.new(_w - 2, 20)
+                textboxTwoStraint.MinSize = Vector2.new(_w - 2, 20)
 
                 textboxTwoGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(34, 34, 34)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(28, 28, 28))}
                 textboxTwoGradient.Rotation = 90
@@ -2741,7 +2817,7 @@ function library:Init(key)
                 textBoxValues.BackgroundTransparency = 1.000
                 textBoxValues.ClipsDescendants = true
                 textBoxValues.Position = UDim2.new(-0.587786257, 0, 0, 0)
-                textBoxValues.Size = UDim2.new(0, 394, 0, 20)
+                textBoxValues.Size = UDim2.new(0, _w - 2, 0, 20)
                 textBoxValues.Font = Enum.Font.Code
                 textBoxValues.PlaceholderColor3 = Color3.fromRGB(140, 140, 140)
                 textBoxValues.PlaceholderText = place
@@ -2752,8 +2828,8 @@ function library:Init(key)
 
                 textBoxValuesStraint.Name = "textBoxValuesStraint"
                 textBoxValuesStraint.Parent = textBoxValues
-                textBoxValuesStraint.MaxSize = Vector2.new(394, 20)
-                textBoxValuesStraint.MinSize = Vector2.new(394, 20)
+                textBoxValuesStraint.MaxSize = Vector2.new(_w - 2, 20)
+                textBoxValuesStraint.MinSize = Vector2.new(_w - 2, 20)
 
                 textBoxValuesPadding.Name = "textBoxValuesPadding"
                 textBoxValuesPadding.Parent = textBoxValues
@@ -2772,7 +2848,7 @@ function library:Init(key)
                 textboxLabel.Parent = textboxFrame
                 textboxLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                 textboxLabel.BackgroundTransparency = 1.000
-                textboxLabel.Size = UDim2.new(0, 396, 0, 24)
+                textboxLabel.Size = UDim2.new(0, _w, 0, 24)
                 textboxLabel.Font = Enum.Font.Code
                 textboxLabel.Text = text
                 textboxLabel.TextColor3 = Color3.fromRGB(190, 190, 190)
@@ -2911,7 +2987,7 @@ function library:Init(key)
                 textboxFrame.BackgroundTransparency = 1.000
                 textboxFrame.ClipsDescendants = true
                 textboxFrame.Position = UDim2.new(0.00499999989, 0, 0.268786132, 0)
-                textboxFrame.Size = UDim2.new(0, 396, 0, 142)
+                textboxFrame.Size = UDim2.new(0, _w, 0, 142)
 
                 textboxFolder.Name = "textboxFolder"
                 textboxFolder.Parent = textboxFrame
@@ -2928,7 +3004,7 @@ function library:Init(key)
                 textbox.Parent = textboxFolder
                 textbox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
                 textbox.Position = UDim2.new(0, 0, 0.169014081, 0)
-                textbox.Size = UDim2.new(0, 396, 0, 118)
+                textbox.Size = UDim2.new(0, _w, 0, 118)
 
                 textboxLayout.Name = "textboxLayout"
                 textboxLayout.Parent = textbox
@@ -2938,8 +3014,8 @@ function library:Init(key)
 
                 textboxStraint.Name = "textboxStraint"
                 textboxStraint.Parent = textbox
-                textboxStraint.MaxSize = Vector2.new(396, 118)
-                textboxStraint.MinSize = Vector2.new(396, 118)
+                textboxStraint.MaxSize = Vector2.new(_w, 118)
+                textboxStraint.MinSize = Vector2.new(_w, 118)
 
                 textboxCorner.CornerRadius = UDim.new(0, 2)
                 textboxCorner.Name = "textboxCorner"
@@ -2948,12 +3024,12 @@ function library:Init(key)
                 textboxTwo.Name = "textboxTwo"
                 textboxTwo.Parent = textbox
                 textboxTwo.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-                textboxTwo.Size = UDim2.new(0, 394, 0, 114)
+                textboxTwo.Size = UDim2.new(0, _w - 2, 0, 114)
 
                 textboxTwoStraint.Name = "textboxTwoStraint"
                 textboxTwoStraint.Parent = textboxTwo
-                textboxTwoStraint.MaxSize = Vector2.new(394, 116)
-                textboxTwoStraint.MinSize = Vector2.new(394, 116)
+                textboxTwoStraint.MaxSize = Vector2.new(_w - 2, 116)
+                textboxTwoStraint.MinSize = Vector2.new(_w - 2, 116)
 
                 textboxTwoGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(34, 34, 34)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(28, 28, 28))}
                 textboxTwoGradient.Rotation = 90
@@ -2969,7 +3045,7 @@ function library:Init(key)
                 textBoxValues.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                 textBoxValues.BackgroundTransparency = 1.000
                 textBoxValues.ClipsDescendants = true
-                textBoxValues.Size = UDim2.new(0, 394, 0, 114)
+                textBoxValues.Size = UDim2.new(0, _w - 2, 0, 114)
                 textBoxValues.Font = Enum.Font.Code
                 textBoxValues.PlaceholderColor3 = Color3.fromRGB(140, 140, 140)
                 textBoxValues.PlaceholderText = place
@@ -2982,8 +3058,8 @@ function library:Init(key)
 
                 textBoxValuesStraint.Name = "textBoxValuesStraint"
                 textBoxValuesStraint.Parent = textBoxValues
-                textBoxValuesStraint.MaxSize = Vector2.new(394, 116)
-                textBoxValuesStraint.MinSize = Vector2.new(394, 116)
+                textBoxValuesStraint.MaxSize = Vector2.new(_w - 2, 116)
+                textBoxValuesStraint.MinSize = Vector2.new(_w - 2, 116)
 
                 textBoxValuesPadding.Name = "textBoxValuesPadding"
                 textBoxValuesPadding.Parent = textBoxValues
@@ -3002,7 +3078,7 @@ function library:Init(key)
                 textboxLabel.Parent = textboxFrame
                 textboxLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                 textboxLabel.BackgroundTransparency = 1.000
-                textboxLabel.Size = UDim2.new(0, 396, 0, 24)
+                textboxLabel.Size = UDim2.new(0, _w, 0, 24)
                 textboxLabel.Font = Enum.Font.Code
                 textboxLabel.Text = text
                 textboxLabel.TextColor3 = Color3.fromRGB(190, 190, 190)
@@ -3121,6 +3197,9 @@ function library:Init(key)
         end
         --
         function Components:NewSelector(text, default, list, callback)
+            local page = self._page
+            local _w = self._width
+            local UpdatePageSize = self._updateSize
             text = text or "selector"
             default = default or ". . ."
             list = list or {}
@@ -3151,14 +3230,14 @@ function library:Init(key)
             selectorFrame.BackgroundTransparency = 1.000
             selectorFrame.ClipsDescendants = true
             selectorFrame.Position = UDim2.new(0.00499999989, 0, 0.0895953774, 0)
-            selectorFrame.Size = UDim2.new(0, 396, 0, 46)
+            selectorFrame.Size = UDim2.new(0, _w, 0, 46)
 
             
             selectorLabel.Name = "selectorLabel"
             selectorLabel.Parent = selectorFrame
             selectorLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             selectorLabel.BackgroundTransparency = 1.000
-            selectorLabel.Size = UDim2.new(0, 396, 0, 24)
+            selectorLabel.Size = UDim2.new(0, _w, 0, 24)
             selectorLabel.Font = Enum.Font.Code
             selectorLabel.Text = text
             selectorLabel.TextColor3 = Color3.fromRGB(190, 190, 190)
@@ -3184,7 +3263,7 @@ function library:Init(key)
             selector.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
             selector.ClipsDescendants = true
             selector.Position = UDim2.new(0, 0, 0.0926640928, 0)
-            selector.Size = UDim2.new(0, 396, 0, 21)
+            selector.Size = UDim2.new(0, _w, 0, 21)
             selector.AutoButtonColor = false
             selector.Font = Enum.Font.SourceSans
             selector.Text = ""
@@ -3194,6 +3273,11 @@ function library:Init(key)
             selectorCorner.CornerRadius = UDim.new(0, 2)
             selectorCorner.Name = "selectorCorner"
             selectorCorner.Parent = selector
+
+            local selectorStroke = Instance.new("UIStroke")
+            selectorStroke.Color = Color3.fromRGB(60, 60, 60)
+            selectorStroke.Thickness = 1
+            selectorStroke.Parent = selector
             
             selectorLayout.Name = "selectorLayout"
             selectorLayout.Parent = selector
@@ -3209,13 +3293,13 @@ function library:Init(key)
             selectorTwo.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             selectorTwo.ClipsDescendants = true
             selectorTwo.Position = UDim2.new(0.00252525252, 0, 0, 0)
-            selectorTwo.Size = UDim2.new(0, 394, 0, 20)
+            selectorTwo.Size = UDim2.new(0, _w - 2, 0, 20)
             
             selectorText.Name = "selectorText"
             selectorText.Parent = selectorTwo
             selectorText.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             selectorText.BackgroundTransparency = 1.000
-            selectorText.Size = UDim2.new(0, 394, 0, 20)
+            selectorText.Size = UDim2.new(0, _w - 2, 0, 20)
             selectorText.Font = Enum.Font.Code
             selectorText.LineHeight = 1.150
             selectorText.TextColor3 = Color3.fromRGB(160, 160, 160)
@@ -3234,7 +3318,7 @@ function library:Init(key)
             Frame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
             Frame.BorderSizePixel = 0
             Frame.Position = UDim2.new(-0.008, 0, 1.78, 0)
-            Frame.Size = UDim2.new(0, 388, 0, 1)
+            Frame.Size = UDim2.new(0, _w - 8, 0, 1)
             
             selectorTwoLayout.Name = "selectorTwoLayout"
             selectorTwoLayout.Parent = selectorTwo
@@ -3258,7 +3342,7 @@ function library:Init(key)
             selectorContainer.Parent = selectorTwo
             selectorContainer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             selectorContainer.BackgroundTransparency = 1.000
-            selectorContainer.Size = UDim2.new(0, 394, 0, 20)
+            selectorContainer.Size = UDim2.new(0, _w - 2, 0, 20)
         
             selectorTwoLayout_2.Name = "selectorTwoLayout"
             selectorTwoLayout_2.Parent = selectorContainer
@@ -3280,6 +3364,8 @@ function library:Init(key)
             selectorArrow.TextSize = 10
             selectorArrow.ZIndex = 5
 
+            CreateTween("chevron", 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
             local selectorOpen = false
             local closedH = 46
 
@@ -3297,20 +3383,20 @@ function library:Init(key)
 
             local function collapseSelector()
                 selectorOpen = false
-                selectorArrow.Text = "▼"
-                TweenService:Create(selectorFrame, TweenTable["selector_drop"], {Size = UDim2.new(0, 396, 0, closedH)}):Play()
+                TweenService:Create(selectorArrow, TweenTable["chevron"], {Rotation = 0}):Play()
+                TweenService:Create(selectorFrame, TweenTable["selector_drop"], {Size = UDim2.new(0, _w, 0, closedH)}):Play()
                 task.delay(0.15, UpdatePageSize)
             end
 
             local function expandSelector()
                 selectorOpen = true
-                selectorArrow.Text = "▲"
+                TweenService:Create(selectorArrow, TweenTable["chevron"], {Rotation = 180}):Play()
                 local h = getOpenH()
                 local optH = countOptions() * 20
-                selectorContainer.Size = UDim2.new(0, 394, 0, optH)
-                selectorTwo.Size = UDim2.new(0, 394, 0, optH + 20)
-                selector.Size = UDim2.new(0, 396, 0, optH + 22)
-                TweenService:Create(selectorFrame, TweenTable["selector_drop"], {Size = UDim2.new(0, 396, 0, h)}):Play()
+                selectorContainer.Size = UDim2.new(0, _w - 2, 0, optH)
+                selectorTwo.Size = UDim2.new(0, _w - 2, 0, optH + 20)
+                selector.Size = UDim2.new(0, _w, 0, optH + 22)
+                TweenService:Create(selectorFrame, TweenTable["selector_drop"], {Size = UDim2.new(0, _w, 0, h)}):Play()
                 task.delay(0.15, UpdatePageSize)
             end
 
@@ -3348,7 +3434,7 @@ function library:Init(key)
                 optionButton.Parent = selectorContainer
                 optionButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                 optionButton.BackgroundTransparency = 1.000
-                optionButton.Size = UDim2.new(0, 394, 0, 20)
+                optionButton.Size = UDim2.new(0, _w - 2, 0, 20)
                 optionButton.AutoButtonColor = false
                 optionButton.Font = Enum.Font.Code
                 optionButton.Text = v
@@ -3362,7 +3448,7 @@ function library:Init(key)
                 hookOptionClick(optionButton)
             end
 
-            selectorFrame.Size = UDim2.new(0, 396, 0, closedH)
+            selectorFrame.Size = UDim2.new(0, _w, 0, closedH)
             UpdatePageSize()
 
             UpdatePageSize()
@@ -3376,7 +3462,7 @@ function library:Init(key)
                 optionButton.Parent = selectorContainer
                 optionButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                 optionButton.BackgroundTransparency = 1.000
-                optionButton.Size = UDim2.new(0, 394, 0, 20)
+                optionButton.Size = UDim2.new(0, _w - 2, 0, 20)
                 optionButton.AutoButtonColor = false
                 optionButton.Font = Enum.Font.Code
                 optionButton.Text = new
@@ -3386,9 +3472,9 @@ function library:Init(key)
                 hookOptionClick(optionButton)
 
                 local optH = countOptions() * 20
-                selectorContainer.Size = UDim2.new(0, 394, 0, optH)
-                selectorTwo.Size = UDim2.new(0, 394, 0, optH + 20)
-                selector.Size = UDim2.new(0, 396, 0, optH + 22)
+                selectorContainer.Size = UDim2.new(0, _w - 2, 0, optH)
+                selectorTwo.Size = UDim2.new(0, _w - 2, 0, optH + 20)
+                selector.Size = UDim2.new(0, _w, 0, optH + 22)
                 if selectorOpen then expandSelector() end
                 return SelectorFunctions
             end
@@ -3408,9 +3494,9 @@ function library:Init(key)
                 end
 
                 local optH = countOptions() * 20
-                selectorContainer.Size = UDim2.new(0, 394, 0, optH)
-                selectorTwo.Size = UDim2.new(0, 394, 0, optH + 20)
-                selector.Size = UDim2.new(0, 396, 0, optH + 22)
+                selectorContainer.Size = UDim2.new(0, _w - 2, 0, optH)
+                selectorTwo.Size = UDim2.new(0, _w - 2, 0, optH + 20)
+                selector.Size = UDim2.new(0, _w, 0, optH + 22)
                 if selectorOpen then expandSelector() end
                 return SelectorFunctions
             end
@@ -3465,6 +3551,9 @@ function library:Init(key)
         end
         --
         function Components:NewSlider(text, suffix, compare, compareSign, values, callback)
+            local page = self._page
+            local _w = self._width
+            local UpdatePageSize = self._updateSize
             text = text or "slider"
             suffix = suffix or ""
             compare = compare or false
@@ -3503,7 +3592,7 @@ function library:Init(key)
             sliderFrame.BackgroundTransparency = 1.000
             sliderFrame.ClipsDescendants = true
             sliderFrame.Position = UDim2.new(0.00499999989, 0, 0.667630076, 0)
-            sliderFrame.Size = UDim2.new(0, 396, 0, 40)
+            sliderFrame.Size = UDim2.new(0, _w, 0, 40)
 
             sliderFolder.Name = "sliderFolder"
             sliderFolder.Parent = sliderFrame
@@ -3520,7 +3609,7 @@ function library:Init(key)
             sliderButton.Parent = sliderFolder
             sliderButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
             sliderButton.Position = UDim2.new(0.348484844, 0, 0.600000024, 0)
-            sliderButton.Size = UDim2.new(0, 396, 0, 16)
+            sliderButton.Size = UDim2.new(0, _w, 0, 16)
             sliderButton.AutoButtonColor = false
             sliderButton.Font = Enum.Font.SourceSans
             sliderButton.Text = ""
@@ -3534,7 +3623,7 @@ function library:Init(key)
             sliderBackground.Name = "sliderBackground"
             sliderBackground.Parent = sliderButton
             sliderBackground.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            sliderBackground.Size = UDim2.new(0, 394, 0, 14)
+            sliderBackground.Size = UDim2.new(0, _w - 2, 0, 14)
             sliderBackground.ClipsDescendants = true
 
             sliderButtonCorner_2.CornerRadius = UDim.new(0, 2)
@@ -3588,7 +3677,7 @@ function library:Init(key)
             sliderLabel.Parent = sliderFrame
             sliderLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             sliderLabel.BackgroundTransparency = 1.000
-            sliderLabel.Size = UDim2.new(0, 396, 0, 24)
+            sliderLabel.Size = UDim2.new(0, _w, 0, 24)
             sliderLabel.Font = Enum.Font.Code
             sliderLabel.Text = text
             sliderLabel.TextColor3 = Color3.fromRGB(190, 190, 190)
@@ -3722,6 +3811,10 @@ function library:Init(key)
         end
         --
         function Components:NewColorPicker(text, default, callback)
+            local page = self._page
+            local _w = self._width
+            local UpdatePageSize = self._updateSize
+            local screen = self._screen
             text = text or "Color Picker"
             default = default or Color3.fromRGB(255, 255, 255)
             callback = callback or function() end
@@ -3731,15 +3824,15 @@ function library:Init(key)
             local pickerOpen = false
             local svSize = 150
             local hueBarWidth = 15
-            local totalPickerW = svSize + 8 + hueBarWidth
-            local pickerStartX = math.floor((396 - totalPickerW) / 2)
+            local popupW = svSize + 8 + hueBarWidth + 16
+            local popupH = svSize + 16
 
             local cpFrame = Instance.new("Frame")
             cpFrame.Name = "colorPickerFrame"
             cpFrame.Parent = page
             cpFrame.BackgroundTransparency = 1
-            cpFrame.Size = UDim2.new(0, 396, 0, 22)
-            cpFrame.ClipsDescendants = true
+            cpFrame.Size = UDim2.new(0, _w, 0, 22)
+            cpFrame.ClipsDescendants = false
 
             local cpLabel = Instance.new("TextLabel")
             cpLabel.Name = "cpLabel"
@@ -3773,22 +3866,31 @@ function library:Init(key)
             previewCorner.CornerRadius = UDim.new(0, 2)
             previewCorner.Parent = preview
 
-            local pickerContainer = Instance.new("Frame")
-            pickerContainer.Name = "pickerContainer"
-            pickerContainer.Parent = cpFrame
-            pickerContainer.Position = UDim2.new(0, 0, 0, 26)
-            pickerContainer.Size = UDim2.new(0, 396, 0, svSize)
-            pickerContainer.BackgroundTransparency = 1
-            pickerContainer.Visible = false
+            local popup = Instance.new("Frame")
+            popup.Name = "cpPopup"
+            popup.Parent = screen
+            popup.Size = UDim2.new(0, popupW, 0, popupH)
+            popup.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            popup.BorderSizePixel = 0
+            popup.Visible = false
+            popup.ZIndex = 100
+            local popupCorner = Instance.new("UICorner")
+            popupCorner.CornerRadius = UDim.new(0, 4)
+            popupCorner.Parent = popup
+            local popupStroke = Instance.new("UIStroke")
+            popupStroke.Color = Color3.fromRGB(60, 60, 60)
+            popupStroke.Thickness = 1
+            popupStroke.Parent = popup
 
             local svFrame = Instance.new("Frame")
             svFrame.Name = "svSquare"
-            svFrame.Parent = pickerContainer
-            svFrame.Position = UDim2.new(0, pickerStartX, 0, 0)
+            svFrame.Parent = popup
+            svFrame.Position = UDim2.new(0, 8, 0, 8)
             svFrame.Size = UDim2.new(0, svSize, 0, svSize)
             svFrame.BackgroundColor3 = Color3.fromHSV(cpH, 1, 1)
             svFrame.BorderSizePixel = 0
             svFrame.ClipsDescendants = true
+            svFrame.ZIndex = 101
             local svCorner = Instance.new("UICorner")
             svCorner.CornerRadius = UDim.new(0, 2)
             svCorner.Parent = svFrame
@@ -3803,7 +3905,7 @@ function library:Init(key)
             whiteOverlay.Size = UDim2.new(1, 0, 1, 0)
             whiteOverlay.BackgroundColor3 = Color3.new(1, 1, 1)
             whiteOverlay.BorderSizePixel = 0
-            whiteOverlay.ZIndex = 2
+            whiteOverlay.ZIndex = 102
             local whiteGrad = Instance.new("UIGradient")
             whiteGrad.Transparency = NumberSequence.new({
                 NumberSequenceKeypoint.new(0, 0),
@@ -3820,7 +3922,7 @@ function library:Init(key)
             blackOverlay.Size = UDim2.new(1, 0, 1, 0)
             blackOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
             blackOverlay.BorderSizePixel = 0
-            blackOverlay.ZIndex = 3
+            blackOverlay.ZIndex = 103
             local blackGrad = Instance.new("UIGradient")
             blackGrad.Transparency = NumberSequence.new({
                 NumberSequenceKeypoint.new(0, 1),
@@ -3840,7 +3942,7 @@ function library:Init(key)
             svCursor.Position = UDim2.new(cpS, 0, 1 - cpV, 0)
             svCursor.BackgroundColor3 = Color3.new(1, 1, 1)
             svCursor.BorderSizePixel = 0
-            svCursor.ZIndex = 5
+            svCursor.ZIndex = 105
             local svCursorCorner = Instance.new("UICorner")
             svCursorCorner.CornerRadius = UDim.new(1, 0)
             svCursorCorner.Parent = svCursor
@@ -3854,15 +3956,16 @@ function library:Init(key)
             svHit.BackgroundTransparency = 1
             svHit.Size = UDim2.new(1, 0, 1, 0)
             svHit.Text = ""
-            svHit.ZIndex = 4
+            svHit.ZIndex = 104
 
             local hueBar = Instance.new("Frame")
             hueBar.Name = "hueBar"
-            hueBar.Parent = pickerContainer
-            hueBar.Position = UDim2.new(0, pickerStartX + svSize + 8, 0, 0)
+            hueBar.Parent = popup
+            hueBar.Position = UDim2.new(0, 8 + svSize + 8, 0, 8)
             hueBar.Size = UDim2.new(0, hueBarWidth, 0, svSize)
             hueBar.BackgroundColor3 = Color3.new(1, 1, 1)
             hueBar.BorderSizePixel = 0
+            hueBar.ZIndex = 101
             local hueCorner = Instance.new("UICorner")
             hueCorner.CornerRadius = UDim.new(0, 2)
             hueCorner.Parent = hueBar
@@ -3892,7 +3995,7 @@ function library:Init(key)
             hueCursor.Position = UDim2.new(0.5, 0, cpH, 0)
             hueCursor.BackgroundColor3 = Color3.new(1, 1, 1)
             hueCursor.BorderSizePixel = 0
-            hueCursor.ZIndex = 5
+            hueCursor.ZIndex = 105
             local hueCursorStroke = Instance.new("UIStroke")
             hueCursorStroke.Color = Color3.new(0, 0, 0)
             hueCursorStroke.Thickness = 1
@@ -3904,7 +4007,7 @@ function library:Init(key)
             hueHit.Size = UDim2.new(1, 8, 1, 0)
             hueHit.Position = UDim2.new(0, -4, 0, 0)
             hueHit.Text = ""
-            hueHit.ZIndex = 4
+            hueHit.ZIndex = 104
 
             local function updateCPColor()
                 currentColor = Color3.fromHSV(cpH, cpS, cpV)
@@ -3915,11 +4018,42 @@ function library:Init(key)
                 pcall(function() callback(currentColor) end)
             end
 
+            local function positionPopup()
+                local px = preview.AbsolutePosition.X - popupW - 4
+                local py = preview.AbsolutePosition.Y
+                local viewportSize = workspace.CurrentCamera.ViewportSize
+                if px < 0 then px = preview.AbsolutePosition.X + 22 end
+                if py + popupH > viewportSize.Y then py = viewportSize.Y - popupH - 4 end
+                popup.Position = UDim2.new(0, px, 0, py)
+            end
+
+            local function closePopup()
+                pickerOpen = false
+                popup.Visible = false
+            end
+
             preview.MouseButton1Click:Connect(function()
                 pickerOpen = not pickerOpen
-                pickerContainer.Visible = pickerOpen
-                cpFrame.Size = pickerOpen and UDim2.new(0, 396, 0, 26 + svSize + 4) or UDim2.new(0, 396, 0, 22)
-                UpdatePageSize()
+                if pickerOpen then
+                    positionPopup()
+                end
+                popup.Visible = pickerOpen
+            end)
+
+            UserInputService.InputBegan:Connect(function(inp)
+                if not pickerOpen then return end
+                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                    local pos = inp.Position
+                    local pAbs = popup.AbsolutePosition
+                    local pSize = popup.AbsoluteSize
+                    if pos.X < pAbs.X or pos.X > pAbs.X + pSize.X or pos.Y < pAbs.Y or pos.Y > pAbs.Y + pSize.Y then
+                        local prAbs = preview.AbsolutePosition
+                        local prSize = preview.AbsoluteSize
+                        if pos.X < prAbs.X or pos.X > prAbs.X + prSize.X or pos.Y < prAbs.Y or pos.Y > prAbs.Y + prSize.Y then
+                            closePopup()
+                        end
+                    end
+                end
             end)
 
             local svDragging = false
@@ -3989,17 +4123,15 @@ function library:Init(key)
             end
             function CPFunctions:Hide()
                 cpFrame.Visible = false
-                UpdatePageSize()
                 return CPFunctions
             end
             function CPFunctions:Show()
                 cpFrame.Visible = true
-                UpdatePageSize()
                 return CPFunctions
             end
             function CPFunctions:Remove()
                 cpFrame:Destroy()
-                UpdatePageSize()
+                popup:Destroy()
                 return CPFunctions
             end
             function CPFunctions:Flag(name)
@@ -4010,6 +4142,9 @@ function library:Init(key)
         end
         --
         function Components:NewSeperator()
+            local page = self._page
+            local _w = self._width
+            local UpdatePageSize = self._updateSize
             local sectionFrame = Instance.new("Frame")
             local sectionLayout = Instance.new("UIListLayout")
             local rightBar = Instance.new("Frame")
@@ -4020,7 +4155,7 @@ function library:Init(key)
             sectionFrame.BackgroundTransparency = 1.000
             sectionFrame.ClipsDescendants = true
             sectionFrame.Position = UDim2.new(0.00499999989, 0, 0.361271679, 0)
-            sectionFrame.Size = UDim2.new(0, 396, 0, 12)
+            sectionFrame.Size = UDim2.new(0, _w, 0, 12)
 
             sectionLayout.Name = "sectionLayout"
             sectionLayout.Parent = sectionFrame
@@ -4054,6 +4189,138 @@ function library:Init(key)
                 return SeperatorFunctions
             end
             return SeperatorFunctions
+        end
+        --
+        local _groupRow = nil
+        local _leftColumn = nil
+        local _rightColumn = nil
+        local _baseW = Components._width
+        local _groupColWidth = math.floor((_baseW - 6) / 2)
+
+        local function _ensureGroupRow()
+            if _groupRow then return end
+            _groupRow = Instance.new("Frame")
+            _groupRow.Name = "groupRow"
+            _groupRow.Parent = page
+            _groupRow.BackgroundTransparency = 1
+            _groupRow.Size = UDim2.new(0, _baseW, 0, 0)
+            _groupRow.AutomaticSize = Enum.AutomaticSize.Y
+            _groupRow.ClipsDescendants = false
+
+            local rowLayout = Instance.new("UIListLayout")
+            rowLayout.Name = "rowLayout"
+            rowLayout.Parent = _groupRow
+            rowLayout.FillDirection = Enum.FillDirection.Horizontal
+            rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+            rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            rowLayout.Padding = UDim.new(0, 6)
+
+            _leftColumn = Instance.new("Frame")
+            _leftColumn.Name = "leftColumn"
+            _leftColumn.Parent = _groupRow
+            _leftColumn.BackgroundTransparency = 1
+            _leftColumn.Size = UDim2.new(0, _groupColWidth, 0, 0)
+            _leftColumn.AutomaticSize = Enum.AutomaticSize.Y
+            _leftColumn.LayoutOrder = 1
+
+            local leftLayout = Instance.new("UIListLayout")
+            leftLayout.Parent = _leftColumn
+            leftLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            leftLayout.Padding = UDim.new(0, 4)
+
+            _rightColumn = Instance.new("Frame")
+            _rightColumn.Name = "rightColumn"
+            _rightColumn.Parent = _groupRow
+            _rightColumn.BackgroundTransparency = 1
+            _rightColumn.Size = UDim2.new(0, _groupColWidth, 0, 0)
+            _rightColumn.AutomaticSize = Enum.AutomaticSize.Y
+            _rightColumn.LayoutOrder = 2
+
+            local rightLayout = Instance.new("UIListLayout")
+            rightLayout.Parent = _rightColumn
+            rightLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            rightLayout.Padding = UDim.new(0, 4)
+
+            UpdatePageSize()
+        end
+
+        local function _createGroupbox(column, title)
+            _ensureGroupRow()
+
+            local gbFrame = Instance.new("Frame")
+            gbFrame.Name = "groupbox_" .. title
+            gbFrame.Parent = column
+            gbFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+            gbFrame.Size = UDim2.new(1, 0, 0, 0)
+            gbFrame.AutomaticSize = Enum.AutomaticSize.Y
+            gbFrame.ClipsDescendants = false
+            gbFrame.BorderSizePixel = 0
+
+            local gbCorner = Instance.new("UICorner")
+            gbCorner.CornerRadius = UDim.new(0, 4)
+            gbCorner.Parent = gbFrame
+
+            local gbStroke = Instance.new("UIStroke")
+            gbStroke.Color = Color3.fromRGB(50, 50, 50)
+            gbStroke.Thickness = 1
+            gbStroke.Parent = gbFrame
+
+            local gbTitle = Instance.new("TextLabel")
+            gbTitle.Name = "gbTitle"
+            gbTitle.Parent = gbFrame
+            gbTitle.BackgroundTransparency = 1
+            gbTitle.Size = UDim2.new(1, 0, 0, 20)
+            gbTitle.Font = Enum.Font.Code
+            gbTitle.Text = " " .. title
+            gbTitle.TextColor3 = Color3.fromRGB(170, 170, 170)
+            gbTitle.TextSize = 13
+            gbTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+            local gbContent = Instance.new("Frame")
+            gbContent.Name = "gbContent"
+            gbContent.Parent = gbFrame
+            gbContent.BackgroundTransparency = 1
+            gbContent.Position = UDim2.new(0, 0, 0, 22)
+            gbContent.Size = UDim2.new(1, 0, 0, 0)
+            gbContent.AutomaticSize = Enum.AutomaticSize.Y
+
+            local gbContentLayout = Instance.new("UIListLayout")
+            gbContentLayout.Parent = gbContent
+            gbContentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            gbContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            gbContentLayout.Padding = UDim.new(0, 4)
+
+            local gbPadding = Instance.new("UIPadding")
+            gbPadding.Parent = gbContent
+            gbPadding.PaddingBottom = UDim.new(0, 4)
+            gbPadding.PaddingLeft = UDim.new(0, 4)
+            gbPadding.PaddingRight = UDim.new(0, 4)
+            gbPadding.PaddingTop = UDim.new(0, 2)
+
+            local gbComponentWidth = _groupColWidth - 8
+            local function gbUpdateSize()
+                UpdatePageSize()
+            end
+
+            gbContent.ChildAdded:Connect(gbUpdateSize)
+            gbContent.ChildRemoved:Connect(gbUpdateSize)
+
+            local gbComponents = setmetatable({
+                _page = gbContent,
+                _width = gbComponentWidth,
+                _updateSize = gbUpdateSize,
+                _screen = screen,
+            }, {__index = Components})
+
+            return gbComponents
+        end
+
+        function Components:AddLeftGroupbox(title)
+            return _createGroupbox(_leftColumn or (function() _ensureGroupRow(); return _leftColumn end)(), title or "Group")
+        end
+
+        function Components:AddRightGroupbox(title)
+            return _createGroupbox(_rightColumn or (function() _ensureGroupRow(); return _rightColumn end)(), title or "Group")
         end
         --
         function Components:Open()
@@ -4122,6 +4389,53 @@ function library:Init(key)
         key = new
         return TabLibrary
     end
+    if library.cornerIcon then
+        library._cornerWatermark = library:ImageWatermark(library.cornerIcon, {
+            corner = "bottomright",
+            size = UDim2.new(0, 48, 0, 48),
+            transparency = 0.3
+        })
+    end
+
+    task.defer(function()
+        local settingsTab = TabLibrary:NewTab("Settings")
+
+        settingsTab:NewSection("Menu")
+        local _mkLabel = settingsTab:NewLabel("Menu Key: " .. key.Name)
+        settingsTab:NewButton("Change Menu Key", function()
+            _mkLabel:Text("Menu Key: press any key...")
+            local inp = UserInputService.InputBegan:Wait()
+            if inp.KeyCode ~= Enum.KeyCode.Unknown then
+                _mkLabel:Text("Menu Key: " .. inp.KeyCode.Name)
+                TabLibrary:UpdateKeybind(inp.KeyCode)
+            else
+                _mkLabel:Text("Menu Key: " .. key.Name)
+            end
+        end)
+        settingsTab:NewSeperator()
+
+        settingsTab:NewSection("Theme")
+        settingsTab:NewColorPicker("Accent Color", library.accentColor, function(color)
+            library:SetAccentColor(color)
+        end):Flag("_AccentColor")
+        settingsTab:NewSeperator()
+
+        settingsTab:NewSection("Watermarks")
+        settingsTab:NewToggle("Corner Watermark", library._cornerWatermark ~= nil, function(v)
+            if library._cornerWatermark then
+                if v then library._cornerWatermark:Show() else library._cornerWatermark:Hide() end
+            end
+        end):Flag("_CornerWatermark")
+        settingsTab:NewToggle("Tab Watermark", true, function(v)
+            if library._watermark then
+                if v then library._watermark:Show() else library._watermark:Hide() end
+            end
+        end):Flag("_TabWatermark")
+
+        local configsTab = TabLibrary:NewTab("Configs")
+        library:BuildConfigSection(configsTab)
+    end)
+
     return TabLibrary
 end
 
@@ -4218,7 +4532,7 @@ function library:ListConfigs()
 end
 
 function library:BuildConfigSection(tab)
-    tab:NewSection("Configs")
+    tab:NewSection("Configuration")
 
     local configList = self:ListConfigs()
     local selectedConfig = configList[1] or ""
