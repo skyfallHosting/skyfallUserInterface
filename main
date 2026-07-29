@@ -34,21 +34,24 @@ local CreateTween = function(name, speed, style, direction, loop, reverse, delay
 end
 
 -- / Dragging
+local _popupActive = false
+
 local drag = function(obj, latency)
-    obj = obj
     latency = latency or 0.06
 
-    toggled = nil
-    input = nil
-    start = nil
+    local toggled = false
+    local input = nil
+    local start = nil
+    local startPos = nil
 
-    function updateInput(input)
-        local Delta = input.Position - start
+    local function updateInput(inp)
+        local Delta = inp.Position - start
         local Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + Delta.X, startPos.Y.Scale, startPos.Y.Offset + Delta.Y)
         TweenService:Create(obj, TweenInfo.new(latency), {Position = Position}):Play()
     end
 
     obj.InputBegan:Connect(function(inp)
+        if _popupActive then return end
         if (inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch) then
             toggled = true
             start = inp.Position
@@ -68,6 +71,7 @@ local drag = function(obj, latency)
     end)
 
     UserInputService.InputChanged:Connect(function(inp)
+        if _popupActive then toggled = false; return end
         if (inp == input and toggled) then
             updateInput(inp)
         end
@@ -81,6 +85,9 @@ local library = {
     rank = "private",
     isMobile = isMobile,
     accentColor = Color3.fromRGB(159, 115, 255),
+    accentColorBottom = Color3.fromRGB(107, 77, 171),
+    bgColor = Color3.fromRGB(34, 34, 34),
+    gradientEnabled = false,
     icon = nil,
     cornerIcon = nil,
     _screenGuis = {},
@@ -276,6 +283,45 @@ function library:SetAccentColor(newColor)
                         if changed then
                             desc.Color = ColorSequence.new(newKps)
                         end
+                    end
+                end)
+            end
+        end)
+    end
+end
+
+function library:ApplyTheme()
+    local top = self.accentColor
+    local bot = self.gradientEnabled and self.accentColorBottom or top
+    local bg = self.bgColor
+    local bgDark = Color3.new(
+        math.clamp(bg.R * 0.82, 0, 1),
+        math.clamp(bg.G * 0.82, 0, 1),
+        math.clamp(bg.B * 0.82, 0, 1)
+    )
+
+    for _, gui in ipairs(self._screenGuis) do
+        pcall(function()
+            if not gui or not gui.Parent then return end
+            for _, desc in ipairs(gui:GetDescendants()) do
+                pcall(function()
+                    if desc.Name == "toggleDesignGradient" and desc:IsA("UIGradient") then
+                        desc.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, top), ColorSequenceKeypoint.new(1, bot)}
+                    elseif desc.Name == "tabIndicator" and desc:IsA("Frame") then
+                        desc.BackgroundColor3 = top
+                    elseif desc.Name == "bar" and desc:IsA("Frame") and desc.Parent and desc.Parent.Name == "barFolder" then
+                        desc.BackgroundColor3 = top
+                    elseif desc.Name == "tabButton" and desc:IsA("TextButton") and desc.TextColor3 ~= Color3.fromRGB(170, 170, 170) then
+                        desc.TextColor3 = top
+                    elseif desc.Name == "backgroundGradient" and desc:IsA("UIGradient") then
+                        desc.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, bg), ColorSequenceKeypoint.new(1, bgDark)}
+                    elseif desc.Name == "containerGradient" and desc:IsA("UIGradient") then
+                        desc.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, bg), ColorSequenceKeypoint.new(1, bgDark)}
+                    elseif desc.Name == "tabButtonsGradient" and desc:IsA("UIGradient") then
+                        desc.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, bg), ColorSequenceKeypoint.new(1, bgDark)}
+                    end
+                    if desc:IsA("ScrollingFrame") then
+                        desc.ScrollBarImageColor3 = top
                     end
                 end)
             end
@@ -1579,6 +1625,7 @@ function library:Init(key)
             end)
 
             button.MouseButton1Click:Connect(function()
+                if not page.Visible then return end
                 callback()
             end)
 
@@ -1992,6 +2039,8 @@ function library:Init(key)
                 On = false
             end
             toggleButton.MouseButton1Click:Connect(function()
+                if not page.Visible then return end
+                if _popupActive then return end
                 On = not On
                 local SizeOn = On and UDim2.new(0, 12, 0, 12) or UDim2.new(0, 0, 0, 0)
                 local Transparency = On and 0 or 1
@@ -4001,6 +4050,7 @@ function library:Init(key)
                 if not pickerOpen then return end
                 pickerOpen = false
                 popup.Visible = false
+                _popupActive = false
                 if library._closeActivePopup == closePopup then
                     library._closeActivePopup = nil
                 end
@@ -4016,6 +4066,7 @@ function library:Init(key)
                     positionPopup()
                     popup.Visible = true
                     pickerOpen = true
+                    _popupActive = true
                     library._closeActivePopup = closePopup
                 end
             end)
@@ -4381,9 +4432,22 @@ function library:Init(key)
         settingsTab:NewSeperator()
 
         settingsTab:NewSection("Theme")
-        settingsTab:NewColorPicker("Accent Color", library.accentColor, function(color)
+        settingsTab:NewToggle("Gradient", library.gradientEnabled, function(v)
+            library.gradientEnabled = v
+            library:ApplyTheme()
+        end):Flag("_GradientEnabled")
+        settingsTab:NewColorPicker("Top Accent Color", library.accentColor, function(color)
             library:SetAccentColor(color)
-        end):Flag("_AccentColor")
+            library:ApplyTheme()
+        end):Flag("_AccentTop")
+        settingsTab:NewColorPicker("Bottom Accent Color", library.accentColorBottom, function(color)
+            library.accentColorBottom = color
+            library:ApplyTheme()
+        end):Flag("_AccentBottom")
+        settingsTab:NewColorPicker("Background Color", library.bgColor, function(color)
+            library.bgColor = color
+            library:ApplyTheme()
+        end):Flag("_BgColor")
         settingsTab:NewSeperator()
 
         settingsTab:NewSection("Watermarks")
