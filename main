@@ -3727,13 +3727,18 @@ function library:Init(key)
             callback = callback or function() end
 
             local currentColor = default
-            local r, g, b = math.floor(default.R * 255), math.floor(default.G * 255), math.floor(default.B * 255)
+            local cpH, cpS, cpV = Color3.toHSV(default)
+            local pickerOpen = false
+            local svSize = 150
+            local hueBarWidth = 15
+            local totalPickerW = svSize + 8 + hueBarWidth
+            local pickerStartX = math.floor((396 - totalPickerW) / 2)
 
             local cpFrame = Instance.new("Frame")
             cpFrame.Name = "colorPickerFrame"
             cpFrame.Parent = page
             cpFrame.BackgroundTransparency = 1
-            cpFrame.Size = UDim2.new(0, 396, 0, 100)
+            cpFrame.Size = UDim2.new(0, 396, 0, 22)
             cpFrame.ClipsDescendants = true
 
             local cpLabel = Instance.new("TextLabel")
@@ -3751,13 +3756,15 @@ function library:Init(key)
             cpLabelPad.Parent = cpLabel
             cpLabelPad.PaddingLeft = UDim.new(0, 2)
 
-            local preview = Instance.new("Frame")
+            local preview = Instance.new("TextButton")
             preview.Name = "colorPreview"
             preview.Parent = cpFrame
             preview.Position = UDim2.new(1, -30, 0, 2)
             preview.Size = UDim2.new(0, 18, 0, 18)
             preview.BackgroundColor3 = currentColor
             preview.BorderSizePixel = 0
+            preview.AutoButtonColor = false
+            preview.Text = ""
             local previewEdge = Instance.new("UIStroke")
             previewEdge.Color = Color3.fromRGB(60, 60, 60)
             previewEdge.Thickness = 1
@@ -3766,125 +3773,207 @@ function library:Init(key)
             previewCorner.CornerRadius = UDim.new(0, 2)
             previewCorner.Parent = preview
 
-            local function makeChannelSlider(channel, yOff, initialVal)
-                local row = Instance.new("Frame")
-                row.Name = channel .. "Row"
-                row.Parent = cpFrame
-                row.BackgroundTransparency = 1
-                row.Position = UDim2.new(0, 0, 0, yOff)
-                row.Size = UDim2.new(0, 396, 0, 20)
+            local pickerContainer = Instance.new("Frame")
+            pickerContainer.Name = "pickerContainer"
+            pickerContainer.Parent = cpFrame
+            pickerContainer.Position = UDim2.new(0, 0, 0, 26)
+            pickerContainer.Size = UDim2.new(0, 396, 0, svSize)
+            pickerContainer.BackgroundTransparency = 1
+            pickerContainer.Visible = false
 
-                local lbl = Instance.new("TextLabel")
-                lbl.Parent = row
-                lbl.BackgroundTransparency = 1
-                lbl.Size = UDim2.new(0, 20, 0, 20)
-                lbl.Position = UDim2.new(0, 2, 0, 0)
-                lbl.Font = Enum.Font.Code
-                lbl.Text = channel
-                lbl.TextColor3 = Color3.fromRGB(160, 160, 160)
-                lbl.TextSize = 13
+            local svFrame = Instance.new("Frame")
+            svFrame.Name = "svSquare"
+            svFrame.Parent = pickerContainer
+            svFrame.Position = UDim2.new(0, pickerStartX, 0, 0)
+            svFrame.Size = UDim2.new(0, svSize, 0, svSize)
+            svFrame.BackgroundColor3 = Color3.fromHSV(cpH, 1, 1)
+            svFrame.BorderSizePixel = 0
+            svFrame.ClipsDescendants = true
+            local svCorner = Instance.new("UICorner")
+            svCorner.CornerRadius = UDim.new(0, 2)
+            svCorner.Parent = svFrame
+            local svStroke = Instance.new("UIStroke")
+            svStroke.Color = Color3.fromRGB(60, 60, 60)
+            svStroke.Thickness = 1
+            svStroke.Parent = svFrame
 
-                local track = Instance.new("Frame")
-                track.Name = "track"
-                track.Parent = row
-                track.Position = UDim2.new(0, 26, 0.5, -5)
-                track.Size = UDim2.new(0, 326, 0, 10)
-                track.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-                track.BorderSizePixel = 0
-                local trackCorner = Instance.new("UICorner")
-                trackCorner.CornerRadius = UDim.new(0, 2)
-                trackCorner.Parent = track
+            local whiteOverlay = Instance.new("Frame")
+            whiteOverlay.Name = "whiteOverlay"
+            whiteOverlay.Parent = svFrame
+            whiteOverlay.Size = UDim2.new(1, 0, 1, 0)
+            whiteOverlay.BackgroundColor3 = Color3.new(1, 1, 1)
+            whiteOverlay.BorderSizePixel = 0
+            whiteOverlay.ZIndex = 2
+            local whiteGrad = Instance.new("UIGradient")
+            whiteGrad.Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0),
+                NumberSequenceKeypoint.new(1, 1),
+            })
+            whiteGrad.Parent = whiteOverlay
+            local whiteOvCorner = Instance.new("UICorner")
+            whiteOvCorner.CornerRadius = UDim.new(0, 2)
+            whiteOvCorner.Parent = whiteOverlay
 
-                local fill = Instance.new("Frame")
-                fill.Name = "fill"
-                fill.Parent = track
-                fill.BackgroundColor3 = channel == "R" and Color3.fromRGB(255, 80, 80) or channel == "G" and Color3.fromRGB(80, 255, 80) or Color3.fromRGB(80, 80, 255)
-                fill.BorderSizePixel = 0
-                fill.Size = UDim2.new(0, (initialVal / 255) * 326, 0, 10)
-                local fillCorner = Instance.new("UICorner")
-                fillCorner.CornerRadius = UDim.new(0, 2)
-                fillCorner.Parent = fill
+            local blackOverlay = Instance.new("Frame")
+            blackOverlay.Name = "blackOverlay"
+            blackOverlay.Parent = svFrame
+            blackOverlay.Size = UDim2.new(1, 0, 1, 0)
+            blackOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
+            blackOverlay.BorderSizePixel = 0
+            blackOverlay.ZIndex = 3
+            local blackGrad = Instance.new("UIGradient")
+            blackGrad.Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 1),
+                NumberSequenceKeypoint.new(1, 0),
+            })
+            blackGrad.Rotation = 90
+            blackGrad.Parent = blackOverlay
+            local blackOvCorner = Instance.new("UICorner")
+            blackOvCorner.CornerRadius = UDim.new(0, 2)
+            blackOvCorner.Parent = blackOverlay
 
-                local valLbl = Instance.new("TextLabel")
-                valLbl.Parent = row
-                valLbl.BackgroundTransparency = 1
-                valLbl.Position = UDim2.new(0, 356, 0, 0)
-                valLbl.Size = UDim2.new(0, 38, 0, 20)
-                valLbl.Font = Enum.Font.Code
-                valLbl.Text = tostring(initialVal)
-                valLbl.TextColor3 = Color3.fromRGB(160, 160, 160)
-                valLbl.TextSize = 13
-                valLbl.TextXAlignment = Enum.TextXAlignment.Right
+            local svCursor = Instance.new("Frame")
+            svCursor.Name = "svCursor"
+            svCursor.Parent = svFrame
+            svCursor.Size = UDim2.new(0, 8, 0, 8)
+            svCursor.AnchorPoint = Vector2.new(0.5, 0.5)
+            svCursor.Position = UDim2.new(cpS, 0, 1 - cpV, 0)
+            svCursor.BackgroundColor3 = Color3.new(1, 1, 1)
+            svCursor.BorderSizePixel = 0
+            svCursor.ZIndex = 5
+            local svCursorCorner = Instance.new("UICorner")
+            svCursorCorner.CornerRadius = UDim.new(1, 0)
+            svCursorCorner.Parent = svCursor
+            local svCursorStroke = Instance.new("UIStroke")
+            svCursorStroke.Color = Color3.new(0, 0, 0)
+            svCursorStroke.Thickness = 1
+            svCursorStroke.Parent = svCursor
 
-                local hitBtn = Instance.new("TextButton")
-                hitBtn.Parent = track
-                hitBtn.BackgroundTransparency = 1
-                hitBtn.Size = UDim2.new(1, 8, 1, 10)
-                hitBtn.Position = UDim2.new(0, -4, 0, -5)
-                hitBtn.Text = ""
-                hitBtn.ZIndex = 10
+            local svHit = Instance.new("TextButton")
+            svHit.Parent = svFrame
+            svHit.BackgroundTransparency = 1
+            svHit.Size = UDim2.new(1, 0, 1, 0)
+            svHit.Text = ""
+            svHit.ZIndex = 4
 
-                return {track = track, fill = fill, valLbl = valLbl, hitBtn = hitBtn}
-            end
+            local hueBar = Instance.new("Frame")
+            hueBar.Name = "hueBar"
+            hueBar.Parent = pickerContainer
+            hueBar.Position = UDim2.new(0, pickerStartX + svSize + 8, 0, 0)
+            hueBar.Size = UDim2.new(0, hueBarWidth, 0, svSize)
+            hueBar.BackgroundColor3 = Color3.new(1, 1, 1)
+            hueBar.BorderSizePixel = 0
+            local hueCorner = Instance.new("UICorner")
+            hueCorner.CornerRadius = UDim.new(0, 2)
+            hueCorner.Parent = hueBar
+            local hueStroke = Instance.new("UIStroke")
+            hueStroke.Color = Color3.fromRGB(60, 60, 60)
+            hueStroke.Thickness = 1
+            hueStroke.Parent = hueBar
 
-            local rSlider = makeChannelSlider("R", 24, r)
-            local gSlider = makeChannelSlider("G", 48, g)
-            local bSlider = makeChannelSlider("B", 72, b)
+            local hueGrad = Instance.new("UIGradient")
+            hueGrad.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.000, Color3.fromRGB(255, 0, 0)),
+                ColorSequenceKeypoint.new(0.167, Color3.fromRGB(255, 255, 0)),
+                ColorSequenceKeypoint.new(0.333, Color3.fromRGB(0, 255, 0)),
+                ColorSequenceKeypoint.new(0.500, Color3.fromRGB(0, 255, 255)),
+                ColorSequenceKeypoint.new(0.667, Color3.fromRGB(0, 0, 255)),
+                ColorSequenceKeypoint.new(0.833, Color3.fromRGB(255, 0, 255)),
+                ColorSequenceKeypoint.new(1.000, Color3.fromRGB(255, 0, 0)),
+            })
+            hueGrad.Rotation = 90
+            hueGrad.Parent = hueBar
 
-            local function updateColor()
-                currentColor = Color3.fromRGB(r, g, b)
+            local hueCursor = Instance.new("Frame")
+            hueCursor.Name = "hueCursor"
+            hueCursor.Parent = hueBar
+            hueCursor.Size = UDim2.new(1, 4, 0, 3)
+            hueCursor.AnchorPoint = Vector2.new(0.5, 0.5)
+            hueCursor.Position = UDim2.new(0.5, 0, cpH, 0)
+            hueCursor.BackgroundColor3 = Color3.new(1, 1, 1)
+            hueCursor.BorderSizePixel = 0
+            hueCursor.ZIndex = 5
+            local hueCursorStroke = Instance.new("UIStroke")
+            hueCursorStroke.Color = Color3.new(0, 0, 0)
+            hueCursorStroke.Thickness = 1
+            hueCursorStroke.Parent = hueCursor
+
+            local hueHit = Instance.new("TextButton")
+            hueHit.Parent = hueBar
+            hueHit.BackgroundTransparency = 1
+            hueHit.Size = UDim2.new(1, 8, 1, 0)
+            hueHit.Position = UDim2.new(0, -4, 0, 0)
+            hueHit.Text = ""
+            hueHit.ZIndex = 4
+
+            local function updateCPColor()
+                currentColor = Color3.fromHSV(cpH, cpS, cpV)
                 preview.BackgroundColor3 = currentColor
+                svFrame.BackgroundColor3 = Color3.fromHSV(cpH, 1, 1)
+                svCursor.Position = UDim2.new(cpS, 0, 1 - cpV, 0)
+                hueCursor.Position = UDim2.new(0.5, 0, cpH, 0)
                 pcall(function() callback(currentColor) end)
             end
 
-            local function hookChannel(slider, getter, setter)
-                local dragging = false
-                local function updateFromX(posX)
-                    local rel = math.clamp((posX - slider.track.AbsolutePosition.X) / math.max(slider.track.AbsoluteSize.X, 1), 0, 1)
-                    local val = math.floor(rel * 255)
-                    setter(val)
-                    slider.fill.Size = UDim2.new(0, rel * slider.track.AbsoluteSize.X, 0, 10)
-                    slider.valLbl.Text = tostring(val)
-                    updateColor()
+            preview.MouseButton1Click:Connect(function()
+                pickerOpen = not pickerOpen
+                pickerContainer.Visible = pickerOpen
+                cpFrame.Size = pickerOpen and UDim2.new(0, 396, 0, 26 + svSize + 4) or UDim2.new(0, 396, 0, 22)
+                UpdatePageSize()
+            end)
+
+            local svDragging = false
+            svHit.InputBegan:Connect(function(inp)
+                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                    svDragging = true
+                    cpS = math.clamp((inp.Position.X - svFrame.AbsolutePosition.X) / svSize, 0, 1)
+                    cpV = 1 - math.clamp((inp.Position.Y - svFrame.AbsolutePosition.Y) / svSize, 0, 1)
+                    updateCPColor()
                 end
+            end)
+            UserInputService.InputChanged:Connect(function(inp)
+                if svDragging and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+                    cpS = math.clamp((inp.Position.X - svFrame.AbsolutePosition.X) / svSize, 0, 1)
+                    cpV = 1 - math.clamp((inp.Position.Y - svFrame.AbsolutePosition.Y) / svSize, 0, 1)
+                    updateCPColor()
+                end
+            end)
+            UserInputService.InputEnded:Connect(function(inp)
+                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                    svDragging = false
+                end
+            end)
 
-                slider.hitBtn.InputBegan:Connect(function(inp)
-                    if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                        dragging = true
-                        updateFromX(inp.Position.X)
-                    end
-                end)
-                UserInputService.InputChanged:Connect(function(inp)
-                    if dragging and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
-                        updateFromX(inp.Position.X)
-                    end
-                end)
-                UserInputService.InputEnded:Connect(function(inp)
-                    if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                        dragging = false
-                    end
-                end)
-            end
-
-            hookChannel(rSlider, function() return r end, function(v) r = v end)
-            hookChannel(gSlider, function() return g end, function(v) g = v end)
-            hookChannel(bSlider, function() return b end, function(v) b = v end)
+            local hueDragging = false
+            hueHit.InputBegan:Connect(function(inp)
+                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                    hueDragging = true
+                    cpH = math.clamp((inp.Position.Y - hueBar.AbsolutePosition.Y) / svSize, 0, 1)
+                    updateCPColor()
+                end
+            end)
+            UserInputService.InputChanged:Connect(function(inp)
+                if hueDragging and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+                    cpH = math.clamp((inp.Position.Y - hueBar.AbsolutePosition.Y) / svSize, 0, 1)
+                    updateCPColor()
+                end
+            end)
+            UserInputService.InputEnded:Connect(function(inp)
+                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                    hueDragging = false
+                end
+            end)
 
             UpdatePageSize()
 
             local CPFunctions = {}
             function CPFunctions:SetColor(color)
-                r = math.floor(color.R * 255)
-                g = math.floor(color.G * 255)
-                b = math.floor(color.B * 255)
+                cpH, cpS, cpV = Color3.toHSV(color)
                 currentColor = color
                 preview.BackgroundColor3 = color
-                rSlider.fill.Size = UDim2.new(0, (r / 255) * rSlider.track.AbsoluteSize.X, 0, 10)
-                gSlider.fill.Size = UDim2.new(0, (g / 255) * gSlider.track.AbsoluteSize.X, 0, 10)
-                bSlider.fill.Size = UDim2.new(0, (b / 255) * bSlider.track.AbsoluteSize.X, 0, 10)
-                rSlider.valLbl.Text = tostring(r)
-                gSlider.valLbl.Text = tostring(g)
-                bSlider.valLbl.Text = tostring(b)
+                svFrame.BackgroundColor3 = Color3.fromHSV(cpH, 1, 1)
+                svCursor.Position = UDim2.new(cpS, 0, 1 - cpV, 0)
+                hueCursor.Position = UDim2.new(0.5, 0, cpH, 0)
                 return CPFunctions
             end
             function CPFunctions:GetColor()
@@ -3914,7 +4003,7 @@ function library:Init(key)
                 return CPFunctions
             end
             function CPFunctions:Flag(name)
-                library:RegisterFlag(name, function() return currentColor end, function(v) CPFunctions:SetColor(v); pcall(function() callback(v) end) end, "color")
+                library:RegisterFlag(name, function() return currentColor end, function(val) CPFunctions:SetColor(val); pcall(function() callback(val) end) end, "color")
                 return CPFunctions
             end
             return CPFunctions
