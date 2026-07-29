@@ -225,6 +225,17 @@ function library:SetAccentColor(newColor)
     local dark67 = accentDark(0.67)
     local dark81 = accentDark(0.81)
 
+    local oldDark67 = Color3.new(math.clamp(oldColor.R * 0.67, 0, 1), math.clamp(oldColor.G * 0.67, 0, 1), math.clamp(oldColor.B * 0.67, 0, 1))
+    local oldDark81 = Color3.new(math.clamp(oldColor.R * 0.81, 0, 1), math.clamp(oldColor.G * 0.81, 0, 1), math.clamp(oldColor.B * 0.81, 0, 1))
+    local _, _, oldBrightness = Color3.toHSV(oldColor)
+    local doFuzzyMatch = oldBrightness > 0.2
+
+    local function colorsClose(c1, c2, threshold)
+        return math.abs(c1.R - c2.R) < threshold
+           and math.abs(c1.G - c2.G) < threshold
+           and math.abs(c1.B - c2.B) < threshold
+    end
+
     for _, gui in ipairs(library._screenGuis) do
         pcall(function()
             if not gui or not gui.Parent then return end
@@ -251,10 +262,10 @@ function library:SetAccentColor(newColor)
                             if v == oldColor then
                                 table.insert(newKps, ColorSequenceKeypoint.new(kp.Time, newColor))
                                 changed = true
-                            elseif math.abs(v.R - oldColor.R * 0.67) < 0.02 and math.abs(v.G - oldColor.G * 0.67) < 0.02 then
+                            elseif doFuzzyMatch and colorsClose(v, oldDark67, 0.02) then
                                 table.insert(newKps, ColorSequenceKeypoint.new(kp.Time, dark67))
                                 changed = true
-                            elseif math.abs(v.R - oldColor.R * 0.81) < 0.02 and math.abs(v.G - oldColor.G * 0.81) < 0.02 then
+                            elseif doFuzzyMatch and colorsClose(v, oldDark81, 0.02) then
                                 table.insert(newKps, ColorSequenceKeypoint.new(kp.Time, dark81))
                                 changed = true
                             else
@@ -570,6 +581,7 @@ function library:Watermark(text)
         Watermark:Destroy()
         return WatermarkFunctions
     end
+    library._watermark = WatermarkFunctions
     return WatermarkFunctions
 end
 
@@ -638,6 +650,7 @@ function library:ImageWatermark(imageId, config)
         gui:Destroy()
         return ImgWmFunctions
     end
+    library._cornerWatermark = ImgWmFunctions
     return ImgWmFunctions
 end
 
@@ -4389,8 +4402,10 @@ function library:Init(key)
         key = new
         return TabLibrary
     end
+    library:Watermark(library.title .. " | v" .. library.version)
+
     if library.cornerIcon then
-        library._cornerWatermark = library:ImageWatermark(library.cornerIcon, {
+        library:ImageWatermark(library.cornerIcon, {
             corner = "bottomright",
             size = UDim2.new(0, 48, 0, 48),
             transparency = 0.3
@@ -4431,6 +4446,12 @@ function library:Init(key)
                 if v then library._watermark:Show() else library._watermark:Hide() end
             end
         end):Flag("_TabWatermark")
+        settingsTab:NewSeperator()
+
+        settingsTab:NewSection("Actions")
+        settingsTab:NewButton("Unload", function()
+            library:Unload()
+        end)
 
         local configsTab = TabLibrary:NewTab("Configs")
         library:BuildConfigSection(configsTab)
@@ -4608,6 +4629,44 @@ function library:BuildConfigSection(tab)
     end)
 
     return configSelector
+end
+
+function library:Unload()
+    for _, gui in ipairs(self._screenGuis) do
+        pcall(function() gui:Destroy() end)
+    end
+    self._screenGuis = {}
+
+    pcall(function()
+        for _, v in ipairs(CoreGuiService:GetChildren()) do
+            if v.Name == "watermark" or v.Name == "ImageWatermark" or v.Name == "screen" or v.Name == "notifications" then
+                v:Destroy()
+            end
+        end
+    end)
+
+    pcall(function()
+        if self._watermark then self._watermark = nil end
+        if self._cornerWatermark then self._cornerWatermark = nil end
+        if self._notifier then self._notifier = nil end
+    end)
+
+    if self._onUnload and type(self._onUnload) == "function" then
+        pcall(self._onUnload)
+    end
+
+    for _, cb in ipairs(self._unloadCallbacks or {}) do
+        pcall(cb)
+    end
+
+    self._flags = {}
+end
+
+function library:OnUnload(callback)
+    if not self._unloadCallbacks then
+        self._unloadCallbacks = {}
+    end
+    table.insert(self._unloadCallbacks, callback)
 end
 
 return library
