@@ -1014,6 +1014,10 @@ function library:Init(key)
     local title = library.title
     key = key or Enum.KeyCode.RightAlt
 
+    if not library.icon then
+        library.icon = library:LoadIcon("https://raw.githubusercontent.com/skyfallHosting/skyfallUserInterface/main/icon.png", "skyfall_icon.png")
+    end
+
     local screen = Instance.new("ScreenGui")
     local edge = Instance.new("Frame")
     local edgeCorner = Instance.new("UICorner")
@@ -3843,9 +3847,9 @@ function library:Init(key)
             local currentColor = default
             local cpH, cpS, cpV = Color3.toHSV(default)
             local pickerOpen = false
-            local svSize = 150
-            local hueBarWidth = 15
-            local popupW = svSize + 8 + hueBarWidth + 16
+            local svSize = 200
+            local hueBarWidth = 16
+            local popupW = svSize + hueBarWidth + 24
             local popupH = svSize + 16
 
             local cpFrame = Instance.new("Frame")
@@ -3853,7 +3857,6 @@ function library:Init(key)
             cpFrame.Parent = page
             cpFrame.BackgroundTransparency = 1
             cpFrame.Size = UDim2.new(0, _w, 0, 22)
-            cpFrame.ClipsDescendants = false
 
             local cpLabel = Instance.new("TextLabel")
             cpLabel.Name = "cpLabel"
@@ -3903,7 +3906,7 @@ function library:Init(key)
             popupStroke.Thickness = 1
             popupStroke.Parent = popup
 
-            local svFrame = Instance.new("Frame")
+            local svFrame = Instance.new("ImageLabel")
             svFrame.Name = "svSquare"
             svFrame.Parent = popup
             svFrame.Position = UDim2.new(0, 8, 0, 8)
@@ -3911,54 +3914,20 @@ function library:Init(key)
             svFrame.BackgroundColor3 = Color3.fromHSV(cpH, 1, 1)
             svFrame.BorderSizePixel = 0
             svFrame.ClipsDescendants = true
+            svFrame.Image = "rbxassetid://4155801252"
+            svFrame.ImageTransparency = 0
+            svFrame.ScaleType = Enum.ScaleType.Stretch
+            svFrame.Active = true
             svFrame.ZIndex = 101
-            local svCorner = Instance.new("UICorner")
-            svCorner.CornerRadius = UDim.new(0, 2)
-            svCorner.Parent = svFrame
             local svStroke = Instance.new("UIStroke")
             svStroke.Color = Color3.fromRGB(60, 60, 60)
             svStroke.Thickness = 1
             svStroke.Parent = svFrame
 
-            local whiteOverlay = Instance.new("Frame")
-            whiteOverlay.Name = "whiteOverlay"
-            whiteOverlay.Parent = svFrame
-            whiteOverlay.Size = UDim2.new(1, 0, 1, 0)
-            whiteOverlay.BackgroundColor3 = Color3.new(1, 1, 1)
-            whiteOverlay.BorderSizePixel = 0
-            whiteOverlay.ZIndex = 102
-            local whiteGrad = Instance.new("UIGradient")
-            whiteGrad.Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 0),
-                NumberSequenceKeypoint.new(1, 1),
-            })
-            whiteGrad.Parent = whiteOverlay
-            local whiteOvCorner = Instance.new("UICorner")
-            whiteOvCorner.CornerRadius = UDim.new(0, 2)
-            whiteOvCorner.Parent = whiteOverlay
-
-            local blackOverlay = Instance.new("Frame")
-            blackOverlay.Name = "blackOverlay"
-            blackOverlay.Parent = svFrame
-            blackOverlay.Size = UDim2.new(1, 0, 1, 0)
-            blackOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
-            blackOverlay.BorderSizePixel = 0
-            blackOverlay.ZIndex = 103
-            local blackGrad = Instance.new("UIGradient")
-            blackGrad.Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 1),
-                NumberSequenceKeypoint.new(1, 0),
-            })
-            blackGrad.Rotation = 90
-            blackGrad.Parent = blackOverlay
-            local blackOvCorner = Instance.new("UICorner")
-            blackOvCorner.CornerRadius = UDim.new(0, 2)
-            blackOvCorner.Parent = blackOverlay
-
             local svCursor = Instance.new("Frame")
             svCursor.Name = "svCursor"
             svCursor.Parent = svFrame
-            svCursor.Size = UDim2.new(0, 8, 0, 8)
+            svCursor.Size = UDim2.new(0, 6, 0, 6)
             svCursor.AnchorPoint = Vector2.new(0.5, 0.5)
             svCursor.Position = UDim2.new(cpS, 0, 1 - cpV, 0)
             svCursor.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -3972,13 +3941,6 @@ function library:Init(key)
             svCursorStroke.Thickness = 1
             svCursorStroke.Parent = svCursor
 
-            local svHit = Instance.new("TextButton")
-            svHit.Parent = svFrame
-            svHit.BackgroundTransparency = 1
-            svHit.Size = UDim2.new(1, 0, 1, 0)
-            svHit.Text = ""
-            svHit.ZIndex = 104
-
             local hueBar = Instance.new("Frame")
             hueBar.Name = "hueBar"
             hueBar.Parent = popup
@@ -3986,25 +3948,20 @@ function library:Init(key)
             hueBar.Size = UDim2.new(0, hueBarWidth, 0, svSize)
             hueBar.BackgroundColor3 = Color3.new(1, 1, 1)
             hueBar.BorderSizePixel = 0
+            hueBar.ClipsDescendants = true
+            hueBar.Active = true
             hueBar.ZIndex = 101
-            local hueCorner = Instance.new("UICorner")
-            hueCorner.CornerRadius = UDim.new(0, 2)
-            hueCorner.Parent = hueBar
             local hueStroke = Instance.new("UIStroke")
             hueStroke.Color = Color3.fromRGB(60, 60, 60)
             hueStroke.Thickness = 1
             hueStroke.Parent = hueBar
 
+            local hueKeypoints = {}
+            for i = 0, 1, 0.1 do
+                table.insert(hueKeypoints, ColorSequenceKeypoint.new(math.clamp(i, 0, 1), Color3.fromHSV(math.clamp(i, 0, 1), 1, 1)))
+            end
             local hueGrad = Instance.new("UIGradient")
-            hueGrad.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0.000, Color3.fromRGB(255, 0, 0)),
-                ColorSequenceKeypoint.new(0.167, Color3.fromRGB(255, 255, 0)),
-                ColorSequenceKeypoint.new(0.333, Color3.fromRGB(0, 255, 0)),
-                ColorSequenceKeypoint.new(0.500, Color3.fromRGB(0, 255, 255)),
-                ColorSequenceKeypoint.new(0.667, Color3.fromRGB(0, 0, 255)),
-                ColorSequenceKeypoint.new(0.833, Color3.fromRGB(255, 0, 255)),
-                ColorSequenceKeypoint.new(1.000, Color3.fromRGB(255, 0, 0)),
-            })
+            hueGrad.Color = ColorSequence.new(hueKeypoints)
             hueGrad.Rotation = 90
             hueGrad.Parent = hueBar
 
@@ -4021,14 +3978,6 @@ function library:Init(key)
             hueCursorStroke.Color = Color3.new(0, 0, 0)
             hueCursorStroke.Thickness = 1
             hueCursorStroke.Parent = hueCursor
-
-            local hueHit = Instance.new("TextButton")
-            hueHit.Parent = hueBar
-            hueHit.BackgroundTransparency = 1
-            hueHit.Size = UDim2.new(1, 8, 1, 0)
-            hueHit.Position = UDim2.new(0, -4, 0, 0)
-            hueHit.Text = ""
-            hueHit.ZIndex = 104
 
             local function updateCPColor()
                 currentColor = Color3.fromHSV(cpH, cpS, cpV)
@@ -4087,51 +4036,28 @@ function library:Init(key)
                 end
             end)
 
-            local svDragging = false
-            svHit.InputBegan:Connect(function(inp)
+            svFrame.InputBegan:Connect(function(inp)
                 if not pickerOpen then return end
-                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                    svDragging = true
-                    cpS = math.clamp((inp.Position.X - svFrame.AbsolutePosition.X) / svSize, 0, 1)
-                    cpV = 1 - math.clamp((inp.Position.Y - svFrame.AbsolutePosition.Y) / svSize, 0, 1)
+                if inp.UserInputType ~= Enum.UserInputType.MouseButton1 and inp.UserInputType ~= Enum.UserInputType.Touch then return end
+                while pickerOpen and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
+                    local absPos = svFrame.AbsolutePosition
+                    local absSize = svFrame.AbsoluteSize
+                    cpS = math.clamp((Mouse.X - absPos.X) / absSize.X, 0, 1)
+                    cpV = 1 - math.clamp((Mouse.Y - absPos.Y) / absSize.Y, 0, 1)
                     updateCPColor()
-                end
-            end)
-            UserInputService.InputChanged:Connect(function(inp)
-                if not pickerOpen then return end
-                if svDragging and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
-                    cpS = math.clamp((inp.Position.X - svFrame.AbsolutePosition.X) / svSize, 0, 1)
-                    cpV = 1 - math.clamp((inp.Position.Y - svFrame.AbsolutePosition.Y) / svSize, 0, 1)
-                    updateCPColor()
-                end
-            end)
-            UserInputService.InputEnded:Connect(function(inp)
-                if not pickerOpen then return end
-                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                    svDragging = false
+                    RunService.RenderStepped:Wait()
                 end
             end)
 
-            local hueDragging = false
-            hueHit.InputBegan:Connect(function(inp)
+            hueBar.InputBegan:Connect(function(inp)
                 if not pickerOpen then return end
-                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                    hueDragging = true
-                    cpH = math.clamp((inp.Position.Y - hueBar.AbsolutePosition.Y) / svSize, 0, 1)
+                if inp.UserInputType ~= Enum.UserInputType.MouseButton1 and inp.UserInputType ~= Enum.UserInputType.Touch then return end
+                while pickerOpen and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
+                    local absPos = hueBar.AbsolutePosition
+                    local absSize = hueBar.AbsoluteSize
+                    cpH = math.clamp((Mouse.Y - absPos.Y) / absSize.Y, 0, 1)
                     updateCPColor()
-                end
-            end)
-            UserInputService.InputChanged:Connect(function(inp)
-                if not pickerOpen then return end
-                if hueDragging and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
-                    cpH = math.clamp((inp.Position.Y - hueBar.AbsolutePosition.Y) / svSize, 0, 1)
-                    updateCPColor()
-                end
-            end)
-            UserInputService.InputEnded:Connect(function(inp)
-                if not pickerOpen then return end
-                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                    hueDragging = false
+                    RunService.RenderStepped:Wait()
                 end
             end)
 
@@ -4428,8 +4354,9 @@ function library:Init(key)
     end
     library:Watermark(library.title .. " | v" .. library.version)
 
-    if library.cornerIcon then
-        library:ImageWatermark(library.cornerIcon, {
+    local _skyfallCornerIcon = library:LoadIcon("https://raw.githubusercontent.com/skyfallHosting/skyfallUserInterface/main/CornerIcon.png", "skyfall_corner.png")
+    if _skyfallCornerIcon then
+        library:ImageWatermark(_skyfallCornerIcon, {
             corner = "bottomright",
             size = UDim2.new(0, 48, 0, 48),
             transparency = 0.3
