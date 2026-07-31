@@ -4205,6 +4205,290 @@ function library:Init(key)
             return SeperatorFunctions
         end
         --
+
+        function Components:NewKeypicker(text, default, callback)
+            local page = self._page
+            local _w = self._width
+            local UpdatePageSize = self._updateSize
+            if isMobile then
+                local stub = {}
+                function stub:GetKey() return default or Enum.KeyCode.Unknown end
+                function stub:SetKey() return stub end
+                function stub:SetFunction() return stub end
+                function stub:Text() return stub end
+                function stub:Hide() return stub end
+                function stub:Show() return stub end
+                function stub:Remove() return stub end
+                function stub:Flag() return stub end
+                return stub
+            end
+            text = text or "key picker"
+            default = default or Enum.KeyCode.Unknown
+            callback = callback or function() end
+
+            local keypickerFrame = Instance.new("Frame")
+            local keypickerButton = Instance.new("TextButton")
+            local keypickerLayout = Instance.new("UIListLayout")
+            local keypickerLabel = Instance.new("TextLabel")
+            local keypickerLabelPadding = Instance.new("UIPadding")
+            local keypickerFolder = Instance.new("Folder")
+            local keypickerFolderLayout = Instance.new("UIListLayout")
+            local keypicker = Instance.new("TextButton")
+            local keypickerCorner = Instance.new("UICorner")
+            local keypickerBackground = Instance.new("Frame")
+            local keypickerGradient = Instance.new("UIGradient")
+            local keypickerBackCorner = Instance.new("UICorner")
+            local keypickerValueLabel = Instance.new("TextLabel")
+            local keypickerLabelStraint = Instance.new("UISizeConstraint")
+            local keypickerBackgroundStraint = Instance.new("UISizeConstraint")
+            local keypickerStraint = Instance.new("UISizeConstraint")
+
+            keypickerFrame.Name = "keypickerFrame"
+            keypickerFrame.Parent = page
+            keypickerFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            keypickerFrame.BackgroundTransparency = 1.000
+            keypickerFrame.ClipsDescendants = true
+            keypickerFrame.Size = UDim2.new(0, _w, 0, 24)
+
+            keypickerButton.Name = "keypickerButton"
+            keypickerButton.Parent = keypickerFrame
+            keypickerButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            keypickerButton.BackgroundTransparency = 1.000
+            keypickerButton.Size = UDim2.new(0, _w, 0, 24)
+            keypickerButton.AutoButtonColor = false
+            keypickerButton.Font = Enum.Font.SourceSans
+            keypickerButton.Text = ""
+            keypickerButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+            keypickerButton.TextSize = 14.000
+
+            keypickerLayout.Name = "keypickerLayout"
+            keypickerLayout.Parent = keypickerButton
+            keypickerLayout.FillDirection = Enum.FillDirection.Horizontal
+            keypickerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            keypickerLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+            keypickerLayout.Padding = UDim.new(0, 4)
+
+            keypickerLabel.Name = "keypickerLabel"
+            keypickerLabel.Parent = keypickerButton
+            keypickerLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            keypickerLabel.BackgroundTransparency = 1.000
+            keypickerLabel.Size = UDim2.new(0, _w, 0, 24)
+            keypickerLabel.Font = Enum.Font.Code
+            keypickerLabel.Text = text
+            keypickerLabel.TextColor3 = Color3.fromRGB(190, 190, 190)
+            keypickerLabel.TextSize = 14.000
+            keypickerLabel.TextWrapped = true
+            keypickerLabel.TextXAlignment = Enum.TextXAlignment.Left
+            keypickerLabel.RichText = true
+
+            keypickerLabelPadding.Name = "keypickerLabelPadding"
+            keypickerLabelPadding.Parent = keypickerLabel
+            keypickerLabelPadding.PaddingBottom = UDim.new(0, 6)
+            keypickerLabelPadding.PaddingLeft = UDim.new(0, 2)
+            keypickerLabelPadding.PaddingRight = UDim.new(0, 6)
+            keypickerLabelPadding.PaddingTop = UDim.new(0, 6)
+
+            keypickerFolder.Name = "keypickerFolder"
+            keypickerFolder.Parent = keypickerFrame
+
+            keypickerFolderLayout.Name = "keypickerFolderLayout"
+            keypickerFolderLayout.Parent = keypickerFolder
+            keypickerFolderLayout.FillDirection = Enum.FillDirection.Horizontal
+            keypickerFolderLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+            keypickerFolderLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            keypickerFolderLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+            keypickerFolderLayout.Padding = UDim.new(0, 4)
+
+            keypicker.Name = "keypicker"
+            keypicker.Parent = keypickerFolder
+            keypicker.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            keypicker.Position = UDim2.new(0.780303001, 0, 0, 0)
+            keypicker.Size = UDim2.new(0, 87, 0, 22)
+            keypicker.AutoButtonColor = false
+            keypicker.Font = Enum.Font.SourceSans
+            keypicker.Text = ""
+            keypicker.TextColor3 = Color3.fromRGB(0, 0, 0)
+            keypicker.TextSize = 14.000
+            keypicker.Active = false
+
+            keypickerCorner.CornerRadius = UDim.new(0, 2)
+            keypickerCorner.Name = "keypickerCorner"
+            keypickerCorner.Parent = keypicker
+
+            keypickerBackground.Name = "keypickerBackground"
+            keypickerBackground.Parent = keypicker
+            keypickerBackground.AnchorPoint = Vector2.new(0.5, 0.5)
+            keypickerBackground.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            keypickerBackground.Position = UDim2.new(0.5, 0, 0.5, 0)
+            keypickerBackground.Size = UDim2.new(0, 85, 0, 20)
+
+            keypickerGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(34, 34, 34)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(28, 28, 28))}
+            keypickerGradient.Rotation = 90
+            keypickerGradient.Name = "keypickerGradient"
+            keypickerGradient.Parent = keypickerBackground
+
+            keypickerBackCorner.CornerRadius = UDim.new(0, 2)
+            keypickerBackCorner.Name = "keypickerBackCorner"
+            keypickerBackCorner.Parent = keypickerBackground
+
+            keypickerValueLabel.Name = "keypickerValueLabel"
+            keypickerValueLabel.Parent = keypickerBackground
+            keypickerValueLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+            keypickerValueLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            keypickerValueLabel.BackgroundTransparency = 1.000
+            keypickerValueLabel.ClipsDescendants = true
+            keypickerValueLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
+            keypickerValueLabel.Size = UDim2.new(0, 85, 0, 20)
+            keypickerValueLabel.Font = Enum.Font.Code
+            keypickerValueLabel.Text = ". . ."
+            keypickerValueLabel.TextColor3 = Color3.fromRGB(190, 190, 190)
+            keypickerValueLabel.TextSize = 14.000
+            keypickerValueLabel.RichText = true
+
+            keypickerLabelStraint.Name = "keypickerLabelStraint"
+            keypickerLabelStraint.Parent = keypickerValueLabel
+            keypickerLabelStraint.MinSize = Vector2.new(28, 20)
+
+            keypickerBackgroundStraint.Name = "keypickerBackgroundStraint"
+            keypickerBackgroundStraint.Parent = keypickerBackground
+            keypickerBackgroundStraint.MinSize = Vector2.new(28, 20)
+
+            keypickerStraint.Name = "keypickerStraint"
+            keypickerStraint.Parent = keypicker
+            keypickerStraint.MinSize = Vector2.new(30, 22)
+
+            local Shortcuts = {
+                Return = "Enter",
+                LeftShift = "LShift",
+                RightShift = "RShift",
+                LeftControl = "LCtrl",
+                RightControl = "RCtrl",
+                LeftAlt = "LAlt",
+                RightAlt = "RAlt",
+                BackSlash = "\\",
+                Backspace = "Back",
+                CapsLock = "Caps",
+            }
+
+            local ChosenKey = default
+            local listening = false
+
+            local function getDisplayName(keyCode)
+                if keyCode == Enum.KeyCode.Unknown then return "None" end
+                return Shortcuts[keyCode.Name] or keyCode.Name
+            end
+
+            keypickerValueLabel.Text = getDisplayName(default)
+            CreateTween("keypicker", 0.08)
+
+            local function ResizeKeypicker()
+                local sz = TextService:GetTextSize(keypickerValueLabel.Text, keypickerValueLabel.TextSize, keypickerValueLabel.Font, Vector2.new(math.huge, math.huge))
+                TweenService:Create(keypickerValueLabel, TweenTable["keypicker"], {Size = UDim2.new(0, sz.X + 6, 0, 20)}):Play()
+                TweenService:Create(keypickerBackground, TweenTable["keypicker"], {Size = UDim2.new(0, sz.X + 6, 0, 20)}):Play()
+                TweenService:Create(keypicker, TweenTable["keypicker"], {Size = UDim2.new(0, sz.X + 8, 0, 22)}):Play()
+            end
+            keypickerValueLabel:GetPropertyChangedSignal("Text"):Connect(ResizeKeypicker)
+            ResizeKeypicker()
+
+            keypickerFrame.MouseEnter:Connect(function()
+                TweenService:Create(keypickerLabel, TweenTable["hover"], {TextColor3 = Color3.fromRGB(210, 210, 210)}):Play()
+            end)
+            keypickerFrame.MouseLeave:Connect(function()
+                TweenService:Create(keypickerLabel, TweenTable["hover"], {TextColor3 = Color3.fromRGB(190, 190, 190)}):Play()
+            end)
+
+            local function startListening()
+                if listening then return end
+                listening = true
+                keypickerValueLabel.Text = ". . ."
+                TweenService:Create(keypicker, TweenTable["keypicker"], {BackgroundColor3 = library.accentColor}):Play()
+            end
+
+            local function stopListening(keyCode)
+                listening = false
+                ChosenKey = keyCode
+                keypickerValueLabel.Text = getDisplayName(keyCode)
+                TweenService:Create(keypicker, TweenTable["keypicker"], {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}):Play()
+                callback(keyCode)
+            end
+
+            keypickerButton.MouseButton1Click:Connect(function()
+                if not page.Visible then return end
+                if _popupActive then return end
+                startListening()
+            end)
+            keypicker.MouseButton1Click:Connect(function()
+                if not page.Visible then return end
+                if _popupActive then return end
+                startListening()
+            end)
+
+            UserInputService.InputBegan:Connect(function(input, gameProcessed)
+                if not listening then return end
+                if input.UserInputType == Enum.UserInputType.Keyboard then
+                    stopListening(input.KeyCode)
+                elseif input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.MouseButton2 then
+                    return
+                end
+            end)
+
+            UpdatePageSize()
+
+            local KeypickerFunctions = {}
+            function KeypickerFunctions:GetKey()
+                return ChosenKey
+            end
+            --
+            function KeypickerFunctions:SetKey(newKey)
+                newKey = newKey or Enum.KeyCode.Unknown
+                ChosenKey = newKey
+                keypickerValueLabel.Text = getDisplayName(newKey)
+                callback(newKey)
+                return KeypickerFunctions
+            end
+            --
+            function KeypickerFunctions:SetFunction(new)
+                new = new or function() end
+                callback = new
+                return KeypickerFunctions
+            end
+            --
+            function KeypickerFunctions:Text(new)
+                new = new or keypickerLabel.Text
+                keypickerLabel.Text = new
+                return KeypickerFunctions
+            end
+            --
+            function KeypickerFunctions:Hide()
+                keypickerFrame.Visible = false
+                UpdatePageSize()
+                return KeypickerFunctions
+            end
+            --
+            function KeypickerFunctions:Show()
+                keypickerFrame.Visible = true
+                UpdatePageSize()
+                return KeypickerFunctions
+            end
+            --
+            function KeypickerFunctions:Remove()
+                keypickerFrame:Destroy()
+                UpdatePageSize()
+                return KeypickerFunctions
+            end
+            --
+            function KeypickerFunctions:Flag(name)
+                library:RegisterFlag(name, function() return ChosenKey end, function(v)
+                    if type(v) == "string" then
+                        v = Enum.KeyCode[v] or Enum.KeyCode.Unknown
+                    end
+                    KeypickerFunctions:SetKey(v)
+                end, "keypicker")
+                return KeypickerFunctions
+            end
+            return KeypickerFunctions
+        end
+        --
         local _groupRow = nil
         local _leftColumn = nil
         local _rightColumn = nil
