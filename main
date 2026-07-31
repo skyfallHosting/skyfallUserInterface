@@ -70,12 +70,12 @@ local drag = function(obj, latency)
         end
     end)
 
-    UserInputService.InputChanged:Connect(function(inp)
+    table.insert(library._connections, UserInputService.InputChanged:Connect(function(inp)
         if _popupActive then toggled = false; return end
         if (inp == input and toggled) then
             updateInput(inp)
         end
-    end)
+    end))
 end
 
 local library = {
@@ -91,6 +91,7 @@ local library = {
     icon = nil,
     cornerIcon = nil,
     _screenGuis = {},
+    _connections = {},
     _cornerGui = nil,
     _flags = {},
     _closeActivePopup = nil,
@@ -1143,11 +1144,11 @@ function library:Init(key)
     end
 
     local CanChangeVisibility = true
-    UserInputService.InputBegan:Connect(function(input)
+    table.insert(library._connections, UserInputService.InputBegan:Connect(function(input)
         if CanChangeVisibility and input.KeyCode == key then
             toggleMenu()
         end
-    end)
+    end))
 
     if isMobile then
         local viewport = workspace.CurrentCamera.ViewportSize
@@ -1186,7 +1187,7 @@ function library:Init(key)
                 btnWasDragged = false
             end
         end)
-        UserInputService.InputChanged:Connect(function(inp)
+        table.insert(library._connections, UserInputService.InputChanged:Connect(function(inp)
             if btnDragStart and (inp.UserInputType == Enum.UserInputType.Touch or inp.UserInputType == Enum.UserInputType.MouseMovement) then
                 local delta = inp.Position - btnDragStart
                 if delta.Magnitude > 10 then
@@ -1194,8 +1195,8 @@ function library:Init(key)
                     menuBtn.Position = UDim2.new(btnStartPos.X.Scale, btnStartPos.X.Offset + delta.X, btnStartPos.Y.Scale, btnStartPos.Y.Offset + delta.Y)
                 end
             end
-        end)
-        UserInputService.InputEnded:Connect(function(inp)
+        end))
+        table.insert(library._connections, UserInputService.InputEnded:Connect(function(inp)
             if inp.UserInputType == Enum.UserInputType.Touch or inp.UserInputType == Enum.UserInputType.MouseButton1 then
                 if btnDragStart and not btnWasDragged then
                     toggleMenu()
@@ -1203,7 +1204,7 @@ function library:Init(key)
                 btnDragStart = nil
                 btnWasDragged = false
             end
-        end)
+        end))
     end
 
     edgeCorner.CornerRadius = UDim.new(0, 2)
@@ -2225,7 +2226,7 @@ function library:Init(key)
                 local ChatTextBox
                 pcall(function() ChatTextBox = Player.PlayerGui.Chat.Frame.ChatBarParentFrame.Frame.BoxFrame.Frame.ChatBar end)
                 if UserInputService.WindowFocused then
-                    UserInputService.InputBegan:Connect(function(c, p)
+                    table.insert(library._connections, UserInputService.InputBegan:Connect(function(c, p)
                         if changingKey then return end
                         if not p then
                             if c.KeyCode.Name == ChosenKey and (not ChatTextBox or not ChatTextBox:IsFocused()) then
@@ -2239,7 +2240,7 @@ function library:Init(key)
                                 return
                             end
                         end
-                    end)
+                    end))
                 end
     
                 local ExtraKeybindFunctions = {}
@@ -2486,7 +2487,7 @@ function library:Init(key)
             local ChatTextBox
             pcall(function() ChatTextBox = Player.PlayerGui.Chat.Frame.ChatBarParentFrame.Frame.BoxFrame.Frame.ChatBar end)
             if UserInputService.WindowFocused then
-                UserInputService.InputBegan:Connect(function(c, p)
+                table.insert(library._connections, UserInputService.InputBegan:Connect(function(c, p)
                     if changingKey then return end
                     if not p then
                         if c.KeyCode.Name == ChosenKey and (not ChatTextBox or not ChatTextBox:IsFocused()) then
@@ -2494,7 +2495,7 @@ function library:Init(key)
                             return
                         end
                     end
-                end)
+                end))
             end
 
             UpdatePageSize()
@@ -3772,17 +3773,17 @@ function library:Init(key)
                 end
             end)
 
-            UserInputService.InputChanged:Connect(function(inp)
+            table.insert(library._connections, UserInputService.InputChanged:Connect(function(inp)
                 if sliding and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
                     updateSliderFromX(inp.Position.X)
                 end
-            end)
+            end))
 
-            UserInputService.InputEnded:Connect(function(inp)
+            table.insert(library._connections, UserInputService.InputEnded:Connect(function(inp)
                 if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
                     sliding = false
                 end
-            end)
+            end))
 
             UpdatePageSize()
 
@@ -4032,7 +4033,7 @@ function library:Init(key)
                 end
             end)
 
-            UserInputService.InputBegan:Connect(function(inp)
+            table.insert(library._connections, UserInputService.InputBegan:Connect(function(inp)
                 if not pickerOpen then return end
                 if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
                     local pos = inp.Position
@@ -4046,7 +4047,7 @@ function library:Init(key)
                         end
                     end
                 end
-            end)
+            end))
 
             svFrame.InputBegan:Connect(function(inp)
                 if not pickerOpen then return end
@@ -4545,14 +4546,14 @@ function library:Init(key)
                 startListening()
             end)
 
-            UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            table.insert(library._connections, UserInputService.InputBegan:Connect(function(input, gameProcessed)
                 if not listening then return end
                 if input.UserInputType == Enum.UserInputType.Keyboard then
                     stopListening(input.KeyCode)
                 elseif input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.MouseButton2 then
                     return
                 end
-            end)
+            end))
 
             UpdatePageSize()
 
@@ -5071,6 +5072,11 @@ function library:BuildConfigSection(tab)
 end
 
 function library:Unload()
+    for _, conn in ipairs(self._connections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    self._connections = {}
+
     for _, gui in ipairs(self._screenGuis) do
         pcall(function() gui:Destroy() end)
     end
