@@ -2042,6 +2042,11 @@ function library:Init(key)
             else
                 On = false
             end
+            local function notifyToggle(state)
+                local status = state and "ON" or "OFF"
+                pcall(function() library:Notify(toggleLabel.Text .. " : " .. status, 1.5) end)
+            end
+
             toggleButton.MouseButton1Click:Connect(function()
                 if not page.Visible then return end
                 if _popupActive then return end
@@ -2050,6 +2055,7 @@ function library:Init(key)
                 local Transparency = On and 0 or 1
                 TweenService:Create(toggleDesign, TweenTable["toggle_form"], {Size = SizeOn}):Play()
                 TweenService:Create(toggleDesign, TweenTable["toggle_form"], {BackgroundTransparency = Transparency}):Play()
+                notifyToggle(On)
                 callback(On)
             end)
 
@@ -2076,6 +2082,7 @@ function library:Init(key)
                 local Transparency = On and 0 or 1
                 TweenService:Create(toggleDesign, TweenTable["toggle_form"], {Size = SizeOn}):Play()
                 TweenService:Create(toggleDesign, TweenTable["toggle_form"], {BackgroundTransparency = Transparency}):Play()
+                notifyToggle(On)
                 callback(On)
                 return ToggleFunctions
             end
@@ -2091,6 +2098,7 @@ function library:Init(key)
                 local Transparency = On and 0 or 1
                 TweenService:Create(toggleDesign, TweenTable["toggle_form"], {Size = SizeOn}):Play()
                 TweenService:Create(toggleDesign, TweenTable["toggle_form"], {BackgroundTransparency = Transparency}):Play()
+                notifyToggle(On)
                 callback(On)
                 return ToggleFunctions
             end
@@ -2222,6 +2230,7 @@ function library:Init(key)
                                 local Transparency = On and 0 or 1
                                 TweenService:Create(toggleDesign, TweenTable["toggle_form"], {Size = SizeOn}):Play()
                                 TweenService:Create(toggleDesign, TweenTable["toggle_form"], {BackgroundTransparency = Transparency}):Play()
+                                notifyToggle(On)
                                 callback_t(On)
                                 return
                             end
