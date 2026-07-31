@@ -357,6 +357,7 @@ function library:Watermark(text)
     watermark.Name = "watermark"
     watermark.Parent = CoreGuiService
     watermark.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    watermark.DisplayOrder = 999
     table.insert(library._screenGuis, watermark)
     
     watermarkLayout.Name = "watermarkLayout"
@@ -715,6 +716,7 @@ function library:InitNotifications(text, duration, callback)
     Notifications.Name = "Notifications"
     Notifications.Parent = CoreGuiService
     Notifications.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    Notifications.DisplayOrder = 999
     table.insert(library._screenGuis, Notifications)
 
     notificationsLayout.Name = "notificationsLayout"
@@ -910,6 +912,7 @@ function library:Introduction()
     introduction.Name = "introduction"
     introduction.Parent = CoreGuiService
     introduction.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    introduction.DisplayOrder = 999
     
     edge.Name = "edge"
     edge.Parent = introduction
@@ -1092,6 +1095,7 @@ function library:Init(key)
     screen.Name = "screen"
     screen.Parent = CoreGuiService
     screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screen.DisplayOrder = 999
     table.insert(library._screenGuis, screen)
 
     edge.Name = "edge"
