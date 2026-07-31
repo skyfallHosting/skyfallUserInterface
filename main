@@ -4210,6 +4210,165 @@ function library:Init(key)
         end
         --
 
+        function Components:NewSubTabGroup(tabs)
+            local page = self._page
+            local _w = self._width
+            local UpdatePageSize = self._updateSize
+            local _screen = self._screen
+            tabs = tabs or {}
+
+            local subTabContainer = Instance.new("Frame")
+            subTabContainer.Name = "subTabContainer"
+            subTabContainer.Parent = page
+            subTabContainer.BackgroundTransparency = 1
+            subTabContainer.Size = UDim2.new(0, _w, 0, 0)
+            subTabContainer.AutomaticSize = Enum.AutomaticSize.Y
+            subTabContainer.ClipsDescendants = false
+
+            local subTabContainerLayout = Instance.new("UIListLayout")
+            subTabContainerLayout.Name = "subTabContainerLayout"
+            subTabContainerLayout.Parent = subTabContainer
+            subTabContainerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            subTabContainerLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            subTabContainerLayout.Padding = UDim.new(0, 0)
+
+            local subTabButtonRow = Instance.new("Frame")
+            subTabButtonRow.Name = "subTabButtonRow"
+            subTabButtonRow.Parent = subTabContainer
+            subTabButtonRow.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            subTabButtonRow.Size = UDim2.new(0, _w, 0, 24)
+            subTabButtonRow.LayoutOrder = 0
+            subTabButtonRow.ClipsDescendants = true
+
+            local subTabButtonRowCorner = Instance.new("UICorner")
+            subTabButtonRowCorner.CornerRadius = UDim.new(0, 2)
+            subTabButtonRowCorner.Parent = subTabButtonRow
+
+            local subTabButtonRowInner = Instance.new("Frame")
+            subTabButtonRowInner.Name = "subTabButtonRowInner"
+            subTabButtonRowInner.Parent = subTabButtonRow
+            subTabButtonRowInner.AnchorPoint = Vector2.new(0.5, 0.5)
+            subTabButtonRowInner.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            subTabButtonRowInner.Position = UDim2.new(0.5, 0, 0.5, 0)
+            subTabButtonRowInner.Size = UDim2.new(0, _w - 2, 0, 22)
+
+            local subTabButtonRowInnerGradient = Instance.new("UIGradient")
+            subTabButtonRowInnerGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(34, 34, 34)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(28, 28, 28))}
+            subTabButtonRowInnerGradient.Rotation = 90
+            subTabButtonRowInnerGradient.Parent = subTabButtonRowInner
+
+            local subTabButtonRowInnerCorner = Instance.new("UICorner")
+            subTabButtonRowInnerCorner.CornerRadius = UDim.new(0, 2)
+            subTabButtonRowInnerCorner.Parent = subTabButtonRowInner
+
+            local subTabButtonLayout = Instance.new("UIListLayout")
+            subTabButtonLayout.Name = "subTabButtonLayout"
+            subTabButtonLayout.Parent = subTabButtonRowInner
+            subTabButtonLayout.FillDirection = Enum.FillDirection.Horizontal
+            subTabButtonLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            subTabButtonLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+            subTabButtonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+            local subPageHost = Instance.new("Frame")
+            subPageHost.Name = "subPageHost"
+            subPageHost.Parent = subTabContainer
+            subPageHost.BackgroundTransparency = 1
+            subPageHost.Size = UDim2.new(0, _w, 0, 0)
+            subPageHost.AutomaticSize = Enum.AutomaticSize.Y
+            subPageHost.LayoutOrder = 1
+            subPageHost.ClipsDescendants = false
+
+            CreateTween("subtab_text", 0.12)
+
+            local subTabButtons = {}
+            local subTabPages = {}
+            local activeSubTab = nil
+
+            local function switchSubTab(name)
+                if activeSubTab == name then return end
+                activeSubTab = name
+                for n, btn in pairs(subTabButtons) do
+                    if n == name then
+                        TweenService:Create(btn, TweenTable["subtab_text"], {TextColor3 = library.accentColor}):Play()
+                    else
+                        TweenService:Create(btn, TweenTable["subtab_text"], {TextColor3 = Color3.fromRGB(170, 170, 170)}):Play()
+                    end
+                end
+                for n, pg in pairs(subTabPages) do
+                    pg.Visible = (n == name)
+                end
+                task.defer(UpdatePageSize)
+            end
+
+            local btnWidth = math.floor((_w - 2) / math.max(#tabs, 1))
+            local result = {}
+            local isFirstSub = true
+
+            for i, tabName in ipairs(tabs) do
+                local subBtn = Instance.new("TextButton")
+                subBtn.Name = "subTabBtn_" .. tabName
+                subBtn.Parent = subTabButtonRowInner
+                subBtn.BackgroundTransparency = 1
+                subBtn.Size = UDim2.new(0, btnWidth, 0, 22)
+                subBtn.AutoButtonColor = false
+                subBtn.Font = Enum.Font.Code
+                subBtn.Text = tabName
+                subBtn.TextColor3 = Color3.fromRGB(170, 170, 170)
+                subBtn.TextSize = 13
+                subBtn.LayoutOrder = i
+                subBtn.RichText = true
+
+                local subPage = Instance.new("Frame")
+                subPage.Name = "subPage_" .. tabName
+                subPage.Parent = subPageHost
+                subPage.BackgroundTransparency = 1
+                subPage.Size = UDim2.new(0, _w, 0, 0)
+                subPage.AutomaticSize = Enum.AutomaticSize.Y
+                subPage.Visible = false
+
+                local subPageLayout = Instance.new("UIListLayout")
+                subPageLayout.Name = "subPageLayout"
+                subPageLayout.Parent = subPage
+                subPageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+                subPageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                subPageLayout.Padding = UDim.new(0, 4)
+
+                local subPagePadding = Instance.new("UIPadding")
+                subPagePadding.Parent = subPage
+                subPagePadding.PaddingTop = UDim.new(0, 4)
+                subPagePadding.PaddingBottom = UDim.new(0, 2)
+
+                subTabButtons[tabName] = subBtn
+                subTabPages[tabName] = subPage
+
+                subBtn.MouseButton1Click:Connect(function()
+                    if library._closeActivePopup then library._closeActivePopup() end
+                    switchSubTab(tabName)
+                end)
+
+                local subComponents = {}
+                subComponents._page = subPage
+                subComponents._width = _w
+                subComponents._updateSize = UpdatePageSize
+                subComponents._screen = _screen
+
+                setmetatable(subComponents, {__index = Components})
+
+                result[tabName] = subComponents
+
+                if isFirstSub then
+                    isFirstSub = false
+                    activeSubTab = tabName
+                    subPage.Visible = true
+                    subBtn.TextColor3 = library.accentColor
+                end
+            end
+
+            UpdatePageSize()
+            return result
+        end
+        --
+
         function Components:NewKeypicker(text, default, callback)
             local page = self._page
             local _w = self._width
