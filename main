@@ -4216,12 +4216,13 @@ function library:Init(key)
             local UpdatePageSize = self._updateSize
             local _screen = self._screen
             tabs = tabs or {}
+            local tabCount = math.max(#tabs, 1)
 
             local subTabContainer = Instance.new("Frame")
             subTabContainer.Name = "subTabContainer"
             subTabContainer.Parent = page
             subTabContainer.BackgroundTransparency = 1
-            subTabContainer.Size = UDim2.new(0, _w, 0, 0)
+            subTabContainer.Size = UDim2.new(1, 0, 0, 0)
             subTabContainer.AutomaticSize = Enum.AutomaticSize.Y
             subTabContainer.ClipsDescendants = false
 
@@ -4236,7 +4237,7 @@ function library:Init(key)
             subTabButtonRow.Name = "subTabButtonRow"
             subTabButtonRow.Parent = subTabContainer
             subTabButtonRow.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            subTabButtonRow.Size = UDim2.new(0, _w, 0, 24)
+            subTabButtonRow.Size = UDim2.new(1, 0, 0, 24)
             subTabButtonRow.LayoutOrder = 0
             subTabButtonRow.ClipsDescendants = true
 
@@ -4250,7 +4251,7 @@ function library:Init(key)
             subTabButtonRowInner.AnchorPoint = Vector2.new(0.5, 0.5)
             subTabButtonRowInner.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             subTabButtonRowInner.Position = UDim2.new(0.5, 0, 0.5, 0)
-            subTabButtonRowInner.Size = UDim2.new(0, _w - 2, 0, 22)
+            subTabButtonRowInner.Size = UDim2.new(1, -2, 0, 22)
 
             local subTabButtonRowInnerGradient = Instance.new("UIGradient")
             subTabButtonRowInnerGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(34, 34, 34)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(28, 28, 28))}
@@ -4273,7 +4274,7 @@ function library:Init(key)
             subPageHost.Name = "subPageHost"
             subPageHost.Parent = subTabContainer
             subPageHost.BackgroundTransparency = 1
-            subPageHost.Size = UDim2.new(0, _w, 0, 0)
+            subPageHost.Size = UDim2.new(1, 0, 0, 0)
             subPageHost.AutomaticSize = Enum.AutomaticSize.Y
             subPageHost.LayoutOrder = 1
             subPageHost.ClipsDescendants = false
@@ -4300,7 +4301,7 @@ function library:Init(key)
                 task.defer(UpdatePageSize)
             end
 
-            local btnWidth = math.floor((_w - 2) / math.max(#tabs, 1))
+            local btnScale = 1 / tabCount
             local result = {}
             local isFirstSub = true
 
@@ -4309,7 +4310,7 @@ function library:Init(key)
                 subBtn.Name = "subTabBtn_" .. tabName
                 subBtn.Parent = subTabButtonRowInner
                 subBtn.BackgroundTransparency = 1
-                subBtn.Size = UDim2.new(0, btnWidth, 0, 22)
+                subBtn.Size = UDim2.new(btnScale, -1, 0, 22)
                 subBtn.AutoButtonColor = false
                 subBtn.Font = Enum.Font.Code
                 subBtn.Text = tabName
@@ -4317,12 +4318,13 @@ function library:Init(key)
                 subBtn.TextSize = 13
                 subBtn.LayoutOrder = i
                 subBtn.RichText = true
+                subBtn.ClipsDescendants = true
 
                 local subPage = Instance.new("Frame")
                 subPage.Name = "subPage_" .. tabName
                 subPage.Parent = subPageHost
                 subPage.BackgroundTransparency = 1
-                subPage.Size = UDim2.new(0, _w, 0, 0)
+                subPage.Size = UDim2.new(1, 0, 0, 0)
                 subPage.AutomaticSize = Enum.AutomaticSize.Y
                 subPage.Visible = false
 
@@ -4782,6 +4784,24 @@ function library:Init(key)
 
         function Components:AddRightGroupbox(title)
             return _createGroupbox(_rightColumn or (function() _ensureGroupRow(); return _rightColumn end)(), title or "Group")
+        end
+
+        local function _createModule(column, title, subtabs)
+            local gb = _createGroupbox(column, title)
+            if subtabs and #subtabs > 0 then
+                return gb:NewSubTabGroup(subtabs)
+            end
+            return gb
+        end
+
+        function Components:AddLeftModule(title, subtabs)
+            _ensureGroupRow()
+            return _createModule(_leftColumn, title or "Module", subtabs)
+        end
+
+        function Components:AddRightModule(title, subtabs)
+            _ensureGroupRow()
+            return _createModule(_rightColumn, title or "Module", subtabs)
         end
         --
         function Components:Open()
