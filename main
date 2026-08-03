@@ -3602,7 +3602,10 @@ function library:Init(key)
             }
             callback = callback or function() end
 
-            values.max = values.max + 1
+            local _step = values.step
+            if not _step then
+                values.max = values.max + 1
+            end
 
             local sliderFrame = Instance.new("Frame")
             local sliderFolder = Instance.new("Folder")
@@ -3760,9 +3763,17 @@ function library:Init(key)
             local sliding = false
             local function updateSliderFromX(posX)
                 local rel = math.clamp((posX - sliderBackground.AbsolutePosition.X) / math.max(sliderBackground.AbsoluteSize.X, 1), 0, 1)
-                ValueNum = math.floor(rel * (tonumber(values.max) - tonumber(values.min)) + tonumber(values.min))
+                local raw = rel * (tonumber(values.max) - tonumber(values.min)) + tonumber(values.min)
+                if _step then
+                    ValueNum = math.clamp(math.floor(raw / _step + 0.5) * _step, values.min, values.max)
+                    local dec = tostring(_step):match("%.(%d+)")
+                    if dec then ValueNum = tonumber(string.format("%." .. #dec .. "f", ValueNum)) end
+                else
+                    ValueNum = math.floor(raw)
+                end
                 TweenService:Create(sliderIndicator, TweenTable["slider_drag"], {Size = UDim2.new(0, rel * sliderBackground.AbsoluteSize.X, 0, 12)}):Play()
-                slideText = compare and ValueNum .. compareSign .. tostring(values.max - 1) .. suffix or ValueNum .. suffix
+                local maxDisplay = _step and values.max or (values.max - 1)
+                slideText = compare and ValueNum .. compareSign .. tostring(maxDisplay) .. suffix or ValueNum .. suffix
                 sliderValue.Text = slideText
                 pcall(function() callback(ValueNum) end)
             end
