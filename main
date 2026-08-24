@@ -4907,6 +4907,9 @@ function library:Init(key)
 
         local configsTab = TabLibrary:NewTab("Configs")
         library:BuildConfigSection(configsTab)
+        task.defer(function()
+            pcall(function() library:LoadAutoloadConfig() end)
+        end)
     end)
 
     return TabLibrary
@@ -4980,6 +4983,38 @@ function library:LoadConfig(name)
         end
     end
     return true
+end
+
+function library:GetAutoloadConfigPath()
+    return self.configFolder .. "/autoload.txt"
+end
+
+function library:SetAutoloadConfig(name)
+    if type(name) ~= "string" or name == "" then return false end
+    if not isfile(self.configFolder .. "/" .. name .. ".json") then return false end
+    self:EnsureConfigFolder()
+    writefile(self:GetAutoloadConfigPath(), name)
+    return true
+end
+
+function library:GetAutoloadConfig()
+    local path = self:GetAutoloadConfigPath()
+    if not isfile(path) then return nil end
+    local ok, name = pcall(readfile, path)
+    if not ok or type(name) ~= "string" or name == "" then return nil end
+    return name
+end
+
+function library:ClearAutoloadConfig()
+    local path = self:GetAutoloadConfigPath()
+    if isfile(path) then delfile(path) end
+    return true
+end
+
+function library:LoadAutoloadConfig()
+    local name = self:GetAutoloadConfig()
+    if not name then return false end
+    return self:LoadConfig(name)
 end
 
 function library:DeleteConfig(name)
@@ -5057,10 +5092,29 @@ function library:BuildConfigSection(tab)
         end)
     end)
 
+    tab:NewButton("Set Config Autoload", function()
+        local name = selectedConfig
+        if not name or name == "" then return end
+        local ok, saved = pcall(function() return self:SetAutoloadConfig(name) end)
+        pcall(function()
+            self:Notify(ok and saved and ("Autoload config set: " .. name) or "Failed to set autoload config", 3)
+        end)
+    end)
+
+    tab:NewButton("Clear Config Autoload", function()
+        local ok = pcall(function() self:ClearAutoloadConfig() end)
+        pcall(function()
+            self:Notify(ok and "Autoload config cleared" or "Failed to clear autoload config", 3)
+        end)
+    end)
+
     tab:NewButton("Delete Config", function()
         local name = selectedConfig
         if not name or name == "" then return end
         pcall(function() self:DeleteConfig(name) end)
+        if self:GetAutoloadConfig() == name then
+            pcall(function() self:ClearAutoloadConfig() end)
+        end
         removeFromList(name)
         selectedConfig = configList[1] or ""
         if selectedConfig ~= "" then
