@@ -81,7 +81,7 @@ local drag = function(obj, latency)
 end
 
 library = {
-    version = "3.0.0",
+    version = "3.1.0",
     title = title or "Skyfall Hub",
     fps = 0,
     rank = "private",
@@ -4850,36 +4850,15 @@ function library:Init(key)
             sliderLabel.RichText = false
             sliderLabel.ZIndex = 16
 
-            -- Dedicated value pill. It is a direct child of sliderFrame with a high
-            -- Z-index, so layout/clipping inside the label band can never erase it.
-            local valuePill = Instance.new("Frame")
-            valuePill.Name = "sliderValuePill"
-            valuePill.Parent = sliderFrame
-            valuePill.AnchorPoint = Vector2.new(1, 0)
-            valuePill.Position = UDim2.new(1, -10, 0, 2)
-            valuePill.Size = UDim2.new(0, 92, 0, 22)
-            valuePill.BackgroundColor3 = library.surfaceHoverColor
-            valuePill.BackgroundTransparency = 0.68
-            valuePill.BorderSizePixel = 0
-            valuePill.ZIndex = 24
-
-            local valuePillCorner = Instance.new("UICorner")
-            valuePillCorner.CornerRadius = UDim.new(0, 6)
-            valuePillCorner.Parent = valuePill
-
-            local valuePillStroke = Instance.new("UIStroke")
-            valuePillStroke.Name = "sliderValueStroke"
-            valuePillStroke.Parent = valuePill
-            valuePillStroke.Color = library.accentSoft
-            valuePillStroke.Transparency = 0.74
-            valuePillStroke.Thickness = 1
-
+            -- Plain right-aligned value text. It has its own reserved band so it
+            -- stays visible without looking like another input field.
             local sliderValue = Instance.new("TextLabel")
             sliderValue.Name = "sliderValue"
-            sliderValue.Parent = valuePill
+            sliderValue.Parent = sliderFrame
             sliderValue.BackgroundTransparency = 1
-            sliderValue.Position = UDim2.new(0, 6, 0, 0)
-            sliderValue.Size = UDim2.new(1, -12, 1, 0)
+            sliderValue.AnchorPoint = Vector2.new(1, 0)
+            sliderValue.Position = UDim2.new(1, -10, 0, 2)
+            sliderValue.Size = UDim2.new(0, 92, 0, 22)
             sliderValue.Font = Enum.Font.GothamSemibold
             sliderValue.Text = tostring(ValueNum) .. suffix
             sliderValue.TextColor3 = library.accentColor
