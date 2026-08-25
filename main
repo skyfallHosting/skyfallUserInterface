@@ -81,7 +81,7 @@ local drag = function(obj, latency)
 end
 
 library = {
-    version = "2.9.0",
+    version = "3.0.0",
     title = title or "Skyfall Hub",
     fps = 0,
     rank = "private",
@@ -2701,7 +2701,7 @@ function library:Init(key)
             local toggleDesignGradient = Instance.new("UIGradient")
             local toggleLabel = Instance.new("TextLabel")
             local toggleLabelPadding = Instance.new("UIPadding")
-            local Extras = Instance.new("Folder")
+            local Extras = Instance.new("Frame")
             local ExtrasLayout = Instance.new("UIListLayout")
 
             toggleButton.Name = "toggleButton"
@@ -2709,7 +2709,7 @@ function library:Init(key)
             toggleButton.BackgroundColor3 = library.surfaceHoverColor
             toggleButton.BackgroundTransparency = 1.000
             toggleButton.ClipsDescendants = false
-            toggleButton.Size = UDim2.new(0, _w, 0, 34)
+            toggleButton.Size = UDim2.new(0, _w, 0, 60)
             toggleButton.Font = Enum.Font.Gotham
             toggleButton.Text = ""
             toggleButton.TextColor3 = Color3.fromRGB(190, 190, 190)
@@ -2806,81 +2806,68 @@ function library:Init(key)
             toggleLabelPadding.Parent = toggleLabel
             toggleLabelPadding.PaddingLeft = UDim.new(0, 2)
 
-            -- v2.9 paired-control layout:
-            --   OPTION NAME
-            --   [TOGGLE]                         [COLOR] [COLOR] [COLOR]
-            -- Normal toggles remain single-row. The moment a related color picker
-            -- follows the toggle, the switch is reparented into this dedicated
-            -- second row and the color chips are right-aligned on that SAME row.
+            -- v3.0 GLOBAL TOGGLE LAYOUT CONTRACT
+            --
+            -- Every toggle in the entire UI is always two rows:
+            --   Toggle Label
+            --   [ SWITCH ]                         [ settings / colors / keybinds ]
+            --
+            -- The left 52 px of row two belongs ONLY to the switch.
+            -- Everything related to that toggle is forced into the right-side
+            -- settings lane. This prevents color chips, selectors, keybinds, etc.
+            -- from ever stacking on top of the switch.
             local controlsRow = Instance.new("Frame")
             controlsRow.Name = "toggleControlsRow"
             controlsRow.Parent = toggleButton
             controlsRow.BackgroundTransparency = 1
-            controlsRow.Position = UDim2.new(0, 0, 0, 27)
-            controlsRow.Size = UDim2.new(1, 0, 0, 24)
-            controlsRow.Visible = false
+            controlsRow.Position = UDim2.new(0, 0, 0, 29)
+            controlsRow.Size = UDim2.new(1, 0, 0, 25)
+            controlsRow.Visible = true
             controlsRow.ClipsDescendants = false
-            controlsRow.ZIndex = 5
+            controlsRow.ZIndex = 6
 
-            local colorWayRow = Instance.new("Frame")
-            colorWayRow.Name = "toggleColorWays"
-            colorWayRow.Parent = controlsRow
-            colorWayRow.AnchorPoint = Vector2.new(1, 0.5)
-            colorWayRow.BackgroundTransparency = 1
-            colorWayRow.Position = UDim2.new(1, -2, 0.5, 0)
-            colorWayRow.Size = UDim2.new(1, -58, 0, 20)
-            colorWayRow.Visible = true
-            colorWayRow.ClipsDescendants = false
-            colorWayRow.ZIndex = 7
+            -- Top row is label only, with protected vertical space.
+            toggleLabel.Position = UDim2.new(0, 0, 0, 0)
+            toggleLabel.Size = UDim2.new(1, -4, 0, 24)
+            toggleLabel.TextYAlignment = Enum.TextYAlignment.Center
 
-            local colorWayLayout = Instance.new("UIListLayout")
-            colorWayLayout.Name = "toggleColorWayLayout"
-            colorWayLayout.Parent = colorWayRow
-            colorWayLayout.FillDirection = Enum.FillDirection.Horizontal
-            colorWayLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-            colorWayLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-            colorWayLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            colorWayLayout.Padding = UDim.new(0, 7)
+            -- Switch is permanently locked to the LEFT of row two.
+            toggleEdge.Parent = controlsRow
+            toggleEdge.AnchorPoint = Vector2.new(0, 0.5)
+            toggleEdge.Position = UDim2.new(0, 2, 0.5, 0)
+            toggleEdge.Size = UDim2.new(0, 42, 0, 20)
+            toggleEdge.ZIndex = 9
 
-            local colorRowActive = false
-            local colorCount = 0
-            local function refreshColorWayRow()
-                if not colorRowActive then return end
-                -- Keep the switch and every color chip on exactly one shared row.
-                -- The right-side container consumes the free space after the switch.
-                colorWayRow.Size = UDim2.new(1, -58, 0, 20)
-                toggleButton.Size = UDim2.new(0, _w, 0, 56)
-                UpdatePageSize()
-            end
+            -- Right-side settings lane. All compact secondary controls go here.
+            Extras.Name = "toggleSettingsLane"
+            Extras.Parent = controlsRow
+            Extras.AnchorPoint = Vector2.new(1, 0.5)
+            Extras.BackgroundTransparency = 1
+            Extras.Position = UDim2.new(1, -2, 0.5, 0)
+            Extras.Size = UDim2.new(1, -62, 0, 24)
+            Extras.ClipsDescendants = false
+            Extras.ZIndex = 8
 
-            local function activateColorWayRow()
-                if not colorRowActive then
-                    colorRowActive = true
-
-                    -- Top row: option/module name only.
-                    toggleLabel.Position = UDim2.new(0, 0, 0, 0)
-                    toggleLabel.Size = UDim2.new(1, -4, 0, 22)
-                    toggleLabel.TextYAlignment = Enum.TextYAlignment.Center
-
-                    -- Second row: switch left, colorways right.
-                    controlsRow.Visible = true
-                    toggleEdge.Parent = controlsRow
-                    toggleEdge.Position = UDim2.new(0, 2, 0.5, -10)
-                    toggleEdge.ZIndex = 8
-                end
-                refreshColorWayRow()
-            end
-
-            Extras.Name = "Extras"
-            Extras.Parent = toggleButton
-
-            ExtrasLayout.Name = "ExtrasLayout"
+            ExtrasLayout.Name = "toggleSettingsLayout"
             ExtrasLayout.Parent = Extras
             ExtrasLayout.FillDirection = Enum.FillDirection.Horizontal
             ExtrasLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
             ExtrasLayout.SortOrder = Enum.SortOrder.LayoutOrder
             ExtrasLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-            ExtrasLayout.Padding = UDim.new(0, 2)
+            ExtrasLayout.Padding = UDim.new(0, 8)
+
+            -- Compatibility aliases used by the existing color-picker pairing code.
+            local colorWayRow = Extras
+            local colorCount = 0
+            local function refreshColorWayRow()
+                toggleButton.Size = UDim2.new(0, _w, 0, 60)
+                UpdatePageSize()
+            end
+            local function activateColorWayRow()
+                -- Layout is already active globally; pairing only adds children to
+                -- the right-hand settings lane.
+                refreshColorWayRow()
+            end
 
             local NewToggleLabelSize = TextService:GetTextSize(toggleLabel.Text, toggleLabel.TextSize, toggleLabel.Font, Vector2.new(math.huge,math.huge))
 
@@ -3162,7 +3149,9 @@ function library:Init(key)
                 frame = toggleButton,
                 label = toggleLabel,
                 switch = toggleEdge,
-                colorRow = colorWayRow,
+                colorRow = Extras,
+                settingsRow = Extras,
+                controlsRow = controlsRow,
                 activate = activateColorWayRow,
                 refresh = refreshColorWayRow,
                 getColorCount = function() return colorCount end,
@@ -4226,8 +4215,6 @@ function library:Init(key)
         end
         --
         function Components:NewSelector(text, default, list, callback)
-            self._lastComponentType = "other"
-            self._lastToggleRecord = nil
             local page = self._page
             local _w = self._width
             local UpdatePageSize = self._updateSize
@@ -4236,10 +4223,42 @@ function library:Init(key)
             list = list or {}
             callback = callback or function() end
 
+            -- v3.0: if a selector directly follows a toggle and clearly belongs to
+            -- that toggle (e.g. "Health Text" -> "Health Text Type"), compact it
+            -- into the toggle's right-side settings lane instead of consuming a new row.
+            local function _selectorPairName(v)
+                local n = tostring(v or ""):lower()
+                n = n:gsub("enabled?", "")
+                n = n:gsub("selector", "")
+                n = n:gsub("setting", "")
+                n = n:gsub("type", "")
+                n = n:gsub("mode", "")
+                n = n:gsub("style", "")
+                n = n:gsub("option", "")
+                n = n:gsub("[^%w]", "")
+                return n
+            end
+
+            local pairRecord = nil
+            if self._lastComponentType == "toggle" and self._lastToggleRecord then
+                local tr = self._lastToggleRecord
+                local a = _selectorPairName(tr.text)
+                local b = _selectorPairName(text)
+                if a ~= "" and b ~= "" and (a == b or b:find(a, 1, true) == 1) then
+                    pairRecord = tr
+                    if tr.activate then tr.activate() end
+                end
+            end
+            if not pairRecord then
+                self._lastComponentType = "other"
+                self._lastToggleRecord = nil
+            end
+
             -- Keep the selector compact. The dropdown itself is an overlay popup and
             -- never participates in the page/groupbox AutomaticSize calculation.
-            local dropW = math.max(math.floor(_w * 0.48), 118)
-            local rowH = 34
+            local dropW = pairRecord and math.min(math.max(math.floor(_w * 0.38), 118), 150)
+                or math.max(math.floor(_w * 0.48), 118)
+            local rowH = pairRecord and 24 or 34
             local optionH = 30
             local optionGap = 2
             local popupPad = 6
@@ -4248,18 +4267,19 @@ function library:Init(key)
 
             local selectorFrame = Instance.new("Frame")
             selectorFrame.Name = "selectorFrame"
-            selectorFrame.Parent = page
+            selectorFrame.Parent = pairRecord and pairRecord.settingsRow or page
             selectorFrame.BackgroundTransparency = 1
             selectorFrame.ClipsDescendants = false
-            selectorFrame.Size = UDim2.new(0, _w, 0, rowH)
+            selectorFrame.Size = pairRecord and UDim2.new(0, dropW, 0, rowH) or UDim2.new(0, _w, 0, rowH)
             selectorFrame.ZIndex = popupZ - 10
 
             local selectorLabel = Instance.new("TextLabel")
             selectorLabel.Name = "selectorLabel"
             selectorLabel.Parent = selectorFrame
             selectorLabel.BackgroundTransparency = 1
-            selectorLabel.Size = UDim2.new(0, _w - dropW - 12, 0, rowH)
+            selectorLabel.Size = pairRecord and UDim2.new(0, 0, 0, 0) or UDim2.new(0, _w - dropW - 12, 0, rowH)
             selectorLabel.Position = UDim2.new(0, 0, 0, 0)
+            selectorLabel.Visible = not pairRecord
             selectorLabel.Font = Enum.Font.Gotham
             selectorLabel.Text = text
             selectorLabel.TextColor3 = library.textSecondary
@@ -4277,15 +4297,15 @@ function library:Init(key)
             selector.Name = "selector"
             selector.Parent = selectorFrame
             selector.BackgroundColor3 = library.strokeColor
-            selector.Position = UDim2.new(1, -dropW, 0, 2)
-            selector.Size = UDim2.new(0, dropW, 0, 30)
+            selector.Position = pairRecord and UDim2.new(0, 0, 0, 0) or UDim2.new(1, -dropW, 0, 2)
+            selector.Size = pairRecord and UDim2.new(0, dropW, 0, 24) or UDim2.new(0, dropW, 0, 30)
             selector.AutoButtonColor = false
             selector.Text = ""
             selector.ClipsDescendants = false
             selector.ZIndex = popupZ - 8
 
             local selectorCorner = Instance.new("UICorner")
-            selectorCorner.CornerRadius = UDim.new(0, 8)
+            selectorCorner.CornerRadius = UDim.new(0, pairRecord and 7 or 8)
             selectorCorner.Parent = selector
 
             local selectorStroke = Instance.new("UIStroke")
@@ -4316,7 +4336,7 @@ function library:Init(key)
             selectorTwoGradient.Parent = selectorTwo
 
             local selectorTwoCorner = Instance.new("UICorner")
-            selectorTwoCorner.CornerRadius = UDim.new(0, 7)
+            selectorTwoCorner.CornerRadius = UDim.new(0, pairRecord and 6 or 7)
             selectorTwoCorner.Parent = selectorTwo
 
             local selectorText = Instance.new("TextLabel")
@@ -5183,7 +5203,7 @@ function library:Init(key)
             cpFrame.Parent = pairRecord and pairRecord.colorRow or page
             cpFrame.BackgroundTransparency = 1
             cpFrame.BackgroundColor3 = pairRecord and library.inputColor or Color3.fromRGB(255, 255, 255)
-            cpFrame.Size = pairRecord and UDim2.new(0, 24, 0, 20) or UDim2.new(0, _w, 0, 22)
+            cpFrame.Size = pairRecord and UDim2.new(0, 22, 0, 22) or UDim2.new(0, _w, 0, 22)
             cpFrame.ClipsDescendants = false
             if pairRecord then
                 pairRecord.activate()
@@ -5227,7 +5247,7 @@ function library:Init(key)
             preview.Parent = cpFrame
             preview.AnchorPoint = pairRecord and Vector2.new(0.5, 0.5) or Vector2.new(0, 0)
             preview.Position = pairRecord and UDim2.new(0.5, 0, 0.5, 0) or UDim2.new(1, -24, 0, 2)
-            preview.Size = pairRecord and UDim2.new(0, 18, 0, 18) or UDim2.new(0, 18, 0, 18)
+            preview.Size = pairRecord and UDim2.new(0, 16, 0, 16) or UDim2.new(0, 18, 0, 18)
             preview.BackgroundColor3 = currentColor
             preview.BorderSizePixel = 0
             preview.AutoButtonColor = false
