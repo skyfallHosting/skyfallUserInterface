@@ -6751,7 +6751,7 @@ function library:Init(key)
         key = new
         return TabLibrary
     end
-    library:Watermark("SKYFALL  •  " .. productTitle .. "  •  v" .. library.version)
+    library:Watermark(productTitle)
 
     local _skyfallCornerIcon = library:LoadIcon("https://raw.githubusercontent.com/skyfallHosting/skyfallUserInterface/main/CornerIcon.png", "skyfall_corner.png")
     if _skyfallCornerIcon then
