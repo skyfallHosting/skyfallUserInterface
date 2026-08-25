@@ -80,27 +80,35 @@ local drag = function(obj, latency)
 end
 
 library = {
-    version = "2.1.0",
+    version = "2.2.0",
     title = title or "Skyfall Hub",
     fps = 0,
     rank = "private",
     isMobile = isMobile,
 
-    -- Skyfall Modern theme tokens
-    accentColor = Color3.fromRGB(151, 100, 255),
-    accentColorBottom = Color3.fromRGB(101, 72, 190),
-    bgColor = Color3.fromRGB(12, 13, 18),
-    sidebarColor = Color3.fromRGB(14, 15, 21),
-    surfaceColor = Color3.fromRGB(20, 21, 29),
-    surfaceHoverColor = Color3.fromRGB(25, 26, 36),
-    inputColor = Color3.fromRGB(25, 26, 34),
-    strokeColor = Color3.fromRGB(43, 43, 56),
-    textPrimary = Color3.fromRGB(239, 240, 246),
-    textSecondary = Color3.fromRGB(188, 190, 203),
-    textMuted = Color3.fromRGB(122, 125, 143),
+    -- Skyfall Atmosphere theme tokens
+    accentColor = Color3.fromRGB(155, 103, 255),
+    accentColorBottom = Color3.fromRGB(103, 72, 199),
+    accentSoft = Color3.fromRGB(119, 85, 198),
+    bgColor = Color3.fromRGB(9, 10, 15),
+    sidebarColor = Color3.fromRGB(11, 12, 18),
+    surfaceColor = Color3.fromRGB(18, 19, 27),
+    surfaceRaisedColor = Color3.fromRGB(21, 22, 31),
+    surfaceHoverColor = Color3.fromRGB(25, 26, 37),
+    inputColor = Color3.fromRGB(21, 22, 30),
+    inputHoverColor = Color3.fromRGB(27, 28, 39),
+    strokeColor = Color3.fromRGB(43, 43, 58),
+    strokeSoftColor = Color3.fromRGB(54, 48, 72),
+    textPrimary = Color3.fromRGB(242, 243, 248),
+    textSecondary = Color3.fromRGB(185, 188, 202),
+    textMuted = Color3.fromRGB(116, 120, 139),
+    textFaint = Color3.fromRGB(83, 87, 105),
     gradientEnabled = true,
     icon = nil,
     cornerIcon = nil,
+    glowAsset = nil,
+    noiseAsset = nil,
+    _lucideIcons = {},
     _screenGuis = {},
     _connections = {},
     _cornerGui = nil,
@@ -239,9 +247,171 @@ function library:LoadIcon(url, filename)
     return asset ~= "" and asset or nil
 end
 
+-- / Skyfall atmosphere assets
+-- Soft lighting textures are embedded so the ambience works without extra repository files.
+local _b64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+local function _decodeBase64(data)
+    data = string.gsub(data, "[^" .. _b64chars .. "=]", "")
+    return (data:gsub(".", function(x)
+        if x == "=" then return "" end
+        local r = ""
+        local f = (_b64chars:find(x, 1, true) or 1) - 1
+        for i = 6, 1, -1 do
+            r = r .. ((f % 2^i - f % 2^(i - 1) > 0) and "1" or "0")
+        end
+        return r
+    end):gsub("%d%d%d?%d?%d?%d?%d?%d?", function(x)
+        if #x ~= 8 then return "" end
+        local c = 0
+        for i = 1, 8 do
+            if x:sub(i, i) == "1" then
+                c = c + 2^(8 - i)
+            end
+        end
+        return string.char(c)
+    end))
+end
+
+local _SKYFALL_GLOW_B64 = [[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]]
+local _SKYFALL_NOISE_B64 = [[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]]
+
+function library:LoadEmbeddedAsset(filename, encoded)
+    local asset = nil
+    pcall(function()
+        if typeof(writefile) ~= "function" then return end
+        if typeof(isfile) ~= "function" or not isfile(filename) then
+            writefile(filename, _decodeBase64(encoded))
+        end
+        if typeof(getcustomasset) == "function" then
+            asset = getcustomasset(filename)
+        elseif typeof(getsynasset) == "function" then
+            asset = getsynasset(filename)
+        end
+    end)
+    return asset
+end
+
+function library:InitAtmosphereAssets()
+    if not self.glowAsset then
+        self.glowAsset = self:LoadEmbeddedAsset("skyfall_ui_soft_glow.png", _SKYFALL_GLOW_B64)
+    end
+    if not self.noiseAsset then
+        self.noiseAsset = self:LoadEmbeddedAsset("skyfall_ui_grain.png", _SKYFALL_NOISE_B64)
+    end
+end
+
+-- Lucide icon names/geometry come from the Lucide catalogue and are cached locally.
+-- PNG is preferred for executor compatibility; official Lucide SVGs remain the fallback.
+function library:LoadLucideIcon(name)
+    name = tostring(name or ""):lower():gsub("[^%w%-]", "")
+    if name == "" then return nil end
+    if self._lucideIcons[name] ~= nil then
+        return self._lucideIcons[name] or nil
+    end
+
+    -- Roblox custom assets are much more reliable with PNG than SVG.
+    -- Iconify mirrors the Lucide catalogue; weserv rasterizes the white SVG to PNG,
+    -- preserving Lucide's exact geometry while allowing ImageColor3 tinting.
+    local encodedIconify =
+        "https%3A%2F%2Fapi.iconify.design%2Flucide%2F" .. name ..
+        ".svg%3Fcolor%3Dwhite%26width%3D48%26height%3D48"
+    local pngUrl =
+        "https://images.weserv.nl/?url=" .. encodedIconify ..
+        "&output=png&w=48&h=48&fit=contain"
+
+    local asset = self:LoadIcon(pngUrl, "skyfall_lucide_" .. name .. ".png")
+    if not asset then
+        -- Fallback for executors that happen to support SVG custom assets directly.
+        asset = self:LoadIcon(
+            "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/" .. name .. ".svg",
+            "skyfall_lucide_" .. name .. ".svg"
+        )
+    end
+
+    self._lucideIcons[name] = asset or false
+    return asset
+end
+
+function library:LucideForTab(titleText)
+    local key = tostring(titleText or ""):lower()
+    if key:find("play", 1, true) then return "play" end
+    if key:find("visual", 1, true) then return "eye" end
+    if key:find("webhook", 1, true) then return "webhook" end
+    if key:find("info", 1, true) then return "circle-help" end
+    if key:find("setting", 1, true) then return "settings" end
+    if key:find("config", 1, true) then return "folder-cog" end
+    if key:find("player", 1, true) then return "user-round" end
+    return "circle"
+end
+
+function library:LucideForSection(titleText)
+    local key = tostring(titleText or ""):lower()
+    if key:find("dungeon", 1, true) then return "castle" end
+    if key:find("lobby", 1, true) then return "shield" end
+    if key:find("automat", 1, true) then return "refresh-cw" end
+    if key:find("loadout", 1, true) or key:find("weapon", 1, true) then return "swords" end
+    if key:find("visual", 1, true) then return "eye" end
+    if key:find("movement", 1, true) then return "move" end
+    if key:find("teleport", 1, true) then return "map-pin" end
+    if key:find("player", 1, true) then return "user-round" end
+    if key:find("farm", 1, true) then return "sprout" end
+    if key:find("setting", 1, true) then return "sliders-horizontal" end
+    if key:find("config", 1, true) then return "folder-cog" end
+    return "sparkles"
+end
+
+function library:TabSubtitle(titleText)
+    local key = tostring(titleText or ""):lower()
+    if key:find("play", 1, true) then return "Automation & gameplay controls" end
+    if key:find("visual", 1, true) then return "ESP & visual presentation" end
+    if key:find("webhook", 1, true) then return "External notifications & integrations" end
+    if key:find("info", 1, true) then return "Session & build information" end
+    if key:find("setting", 1, true) then return "Interface & behavior preferences" end
+    if key:find("config", 1, true) then return "Save & restore your profiles" end
+    return "Skyfall controls"
+end
+
+function library:AddSoftGlow(parent, transparency, padding, color, zIndex)
+    if not self.glowAsset or not parent then return nil end
+    local glow = Instance.new("ImageLabel")
+    glow.Name = "softGlow"
+    glow.Parent = parent
+    glow.BackgroundTransparency = 1
+    glow.Image = self.glowAsset
+    glow.ImageColor3 = color or self.accentColor
+    glow.ImageTransparency = transparency or 0.9
+    glow.ScaleType = Enum.ScaleType.Slice
+    glow.SliceCenter = Rect.new(40, 40, 88, 88)
+    glow.Position = UDim2.new(0, -(padding or 12), 0, -(padding or 12))
+    glow.Size = UDim2.new(1, (padding or 12) * 2, 1, (padding or 12) * 2)
+    glow.ZIndex = math.max(zIndex or 1, 1)
+    glow.Active = false
+    glow.Selectable = false
+    return glow
+end
+
+function library:AddNoise(parent, transparency)
+    if not self.noiseAsset or not parent then return nil end
+    local grain = Instance.new("ImageLabel")
+    grain.Name = "ambientGrain"
+    grain.Parent = parent
+    grain.BackgroundTransparency = 1
+    grain.Image = self.noiseAsset
+    grain.ImageColor3 = Color3.fromRGB(180, 180, 200)
+    grain.ImageTransparency = transparency or 0.965
+    grain.ScaleType = Enum.ScaleType.Tile
+    grain.TileSize = UDim2.new(0, 96, 0, 96)
+    grain.Size = UDim2.new(1, 0, 1, 0)
+    grain.ZIndex = 3
+    grain.Active = false
+    grain.Selectable = false
+    return grain
+end
+
 function library:SetAccentColor(newColor)
     local oldColor = library.accentColor
     library.accentColor = newColor
+    library.accentSoft = newColor:Lerp(Color3.fromRGB(105, 105, 125), 0.24)
     local dark67 = accentDark(0.67)
     local dark81 = accentDark(0.81)
 
@@ -269,6 +439,9 @@ function library:SetAccentColor(newColor)
                     end
                     if desc:IsA("ImageLabel") and desc.ImageColor3 == oldColor then
                         desc.ImageColor3 = newColor
+                    end
+                    if desc:IsA("UIStroke") and desc.Color == oldColor then
+                        desc.Color = newColor
                     end
                     if desc:IsA("ScrollingFrame") and desc.ScrollBarImageColor3 == oldColor then
                         desc.ScrollBarImageColor3 = newColor
@@ -306,10 +479,15 @@ function library:ApplyTheme()
     local top = self.accentColor
     local bot = self.gradientEnabled and self.accentColorBottom or top
     local bg = self.bgColor
+    local bgMid = Color3.new(
+        math.clamp(bg.R * 0.90, 0, 1),
+        math.clamp(bg.G * 0.90, 0, 1),
+        math.clamp(bg.B * 0.90, 0, 1)
+    )
     local bgDark = Color3.new(
-        math.clamp(bg.R * 0.82, 0, 1),
-        math.clamp(bg.G * 0.82, 0, 1),
-        math.clamp(bg.B * 0.82, 0, 1)
+        math.clamp(bg.R * 0.74, 0, 1),
+        math.clamp(bg.G * 0.74, 0, 1),
+        math.clamp(bg.B * 0.74, 0, 1)
     )
 
     for _, gui in ipairs(self._screenGuis) do
@@ -317,29 +495,72 @@ function library:ApplyTheme()
             if not gui or not gui.Parent then return end
             for _, desc in ipairs(gui:GetDescendants()) do
                 pcall(function()
-                    if desc.Name == "toggleDesignGradient" and desc:IsA("UIGradient") then
-                        desc.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, top), ColorSequenceKeypoint.new(1, bot)}
-                    elseif desc.Name == "tabIndicator" and desc:IsA("Frame") then
+                    if desc.Name == "tabIndicator" and desc:IsA("Frame") then
                         desc.BackgroundColor3 = top
                     elseif desc.Name == "bar" and desc:IsA("Frame") and desc.Parent and desc.Parent.Name == "barFolder" then
                         desc.BackgroundColor3 = top
-                    elseif desc.Name == "tabButton" and desc:IsA("TextButton") and desc.TextColor3 ~= Color3.fromRGB(170, 170, 170) then
-                        desc.TextColor3 = top
+                    elseif desc.Name == "headerBarGradient" and desc:IsA("UIGradient") then
+                        desc.Color = ColorSequence.new{
+                            ColorSequenceKeypoint.new(0.00, accentDark(0.42)),
+                            ColorSequenceKeypoint.new(0.26, top),
+                            ColorSequenceKeypoint.new(0.72, bot),
+                            ColorSequenceKeypoint.new(1.00, accentDark(0.36))
+                        }
+                    elseif desc.Name == "sliderIndicatorGradient" and desc:IsA("UIGradient") then
+                        desc.Color = ColorSequence.new{
+                            ColorSequenceKeypoint.new(0, top),
+                            ColorSequenceKeypoint.new(1, bot)
+                        }
+                    elseif desc.Name == "toggleGradient" and desc:IsA("UIGradient") then
+                        local track = desc.Parent
+                        local isOn = track and track:IsA("Frame") and track.BackgroundColor3 == top
+                        desc.Color = isOn and ColorSequence.new{
+                            ColorSequenceKeypoint.new(0, top),
+                            ColorSequenceKeypoint.new(1, bot)
+                        } or ColorSequence.new{
+                            ColorSequenceKeypoint.new(0, Color3.fromRGB(53, 54, 68)),
+                            ColorSequenceKeypoint.new(1, Color3.fromRGB(38, 39, 51))
+                        }
+                    elseif desc.Name == "statusDot" and desc:IsA("Frame") then
+                        desc.BackgroundColor3 = top
+                    elseif desc.Name == "softGlow" and desc:IsA("ImageLabel") then
+                        desc.ImageColor3 = top
+                    elseif desc.Name == "gbLucideIcon" and desc:IsA("ImageLabel") then
+                        desc.ImageColor3 = top
                     elseif desc.Name == "backgroundGradient" and desc:IsA("UIGradient") then
-                        desc.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, bg), ColorSequenceKeypoint.new(1, bgDark)}
+                        desc.Color = self.gradientEnabled and ColorSequence.new{
+                            ColorSequenceKeypoint.new(0, bg),
+                            ColorSequenceKeypoint.new(0.50, bgMid),
+                            ColorSequenceKeypoint.new(1, bgDark)
+                        } or ColorSequence.new{ColorSequenceKeypoint.new(0, bg), ColorSequenceKeypoint.new(1, bg)}
                     elseif desc.Name == "containerGradient" and desc:IsA("UIGradient") then
-                        desc.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, bg), ColorSequenceKeypoint.new(1, bgDark)}
+                        desc.Color = self.gradientEnabled and ColorSequence.new{
+                            ColorSequenceKeypoint.new(0, bgMid),
+                            ColorSequenceKeypoint.new(0.55, bg),
+                            ColorSequenceKeypoint.new(1, bgDark)
+                        } or ColorSequence.new{ColorSequenceKeypoint.new(0, bg), ColorSequenceKeypoint.new(1, bg)}
                     elseif desc.Name == "tabButtonsGradient" and desc:IsA("UIGradient") then
-                        desc.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, bg), ColorSequenceKeypoint.new(1, bgDark)}
+                        desc.Color = self.gradientEnabled and ColorSequence.new{
+                            ColorSequenceKeypoint.new(0, bgMid),
+                            ColorSequenceKeypoint.new(1, bgDark)
+                        } or ColorSequence.new{ColorSequenceKeypoint.new(0, bg), ColorSequenceKeypoint.new(1, bg)}
+                    elseif desc.Name == "groupboxAmbientStroke" and desc:IsA("UIStroke") then
+                        desc.Color = self.accentSoft
+                    elseif desc.Name == "windowAccentStroke" and desc:IsA("UIStroke") then
+                        desc.Color = top
+                    elseif desc.Name == "windowGlowStroke" and desc:IsA("UIStroke") then
+                        desc.Color = top
                     end
+
                     if desc:IsA("ScrollingFrame") then
-                        desc.ScrollBarImageColor3 = top
+                        desc.ScrollBarImageColor3 = accentDark(0.72)
                     end
                 end)
             end
         end)
     end
 end
+
 
 function library:Watermark(text)
     for i,v in pairs(CoreGuiService:GetChildren()) do
@@ -1075,6 +1296,17 @@ function library:Init(key)
     local title = library.title
     key = key or Enum.KeyCode.RightAlt
 
+    library:InitAtmosphereAssets()
+
+    local productTitle = tostring(title or "Skyfall Hub")
+    local parsed = productTitle:match("—%s*(.+)$") or productTitle:match("%-%s*(.+)$")
+    if parsed and parsed ~= "" then
+        productTitle = parsed
+    elseif productTitle:lower():find("skyfall hub", 1, true) then
+        productTitle = productTitle:gsub("^[Ss][Kk][Yy][Ff][Aa][Ll][Ll]%s+[Hh][Uu][Bb]%s*", "")
+    end
+    if productTitle == "" then productTitle = "Skyfall Hub" end
+
     if not library.icon then
         library.icon = library:LoadIcon("https://raw.githubusercontent.com/skyfallHosting/skyfallUserInterface/main/icon.png", "skyfall_icon.png")
     end
@@ -1113,9 +1345,28 @@ function library:Init(key)
     edge.Name = "edge"
     edge.Parent = screen
     edge.AnchorPoint = Vector2.new(0.5, 0.5)
-    edge.BackgroundColor3 = Color3.fromRGB(49, 38, 70)
+    edge.BackgroundColor3 = Color3.fromRGB(30, 24, 44)
     edge.Position = UDim2.new(0.5, 0, 0.5, 0)
     edge.Size = UDim2.new(0, 760, 0, 500)
+    edge.BorderSizePixel = 0
+    edge.ClipsDescendants = false
+    edge.ZIndex = 2
+
+    -- Window halo: one blurred texture + two extremely soft strokes.
+    local windowGlow = library:AddSoftGlow(edge, 0.76, 28, library.accentColor, 0)
+    local windowStroke = Instance.new("UIStroke")
+    windowStroke.Name = "windowAccentStroke"
+    windowStroke.Parent = edge
+    windowStroke.Color = library.accentColor
+    windowStroke.Transparency = 0.54
+    windowStroke.Thickness = 1
+
+    local windowGlowStroke = Instance.new("UIStroke")
+    windowGlowStroke.Name = "windowGlowStroke"
+    windowGlowStroke.Parent = edge
+    windowGlowStroke.Color = library.accentColor
+    windowGlowStroke.Transparency = 0.90
+    windowGlowStroke.Thickness = 4
 
     drag(edge, 0.04)
 
@@ -1218,7 +1469,7 @@ function library:Init(key)
         end))
     end
 
-    edgeCorner.CornerRadius = UDim.new(0, 14)
+    edgeCorner.CornerRadius = UDim.new(0, 16)
     edgeCorner.Name = "edgeCorner"
     edgeCorner.Parent = edge
 
@@ -1229,34 +1480,70 @@ function library:Init(key)
     background.Position = UDim2.new(0.5, 0, 0.5, 0)
     background.Size = UDim2.new(0, 758, 0, 498)
     background.ClipsDescendants = true
+    background.BorderSizePixel = 0
+    background.ZIndex = 2
 
-    backgroundCorner.CornerRadius = UDim.new(0, 13)
+    backgroundCorner.CornerRadius = UDim.new(0, 15)
     backgroundCorner.Name = "backgroundCorner"
     backgroundCorner.Parent = background
 
-    local windowStroke = Instance.new("UIStroke")
-    windowStroke.Name = "windowStroke"
-    windowStroke.Parent = background
-    windowStroke.Color = Color3.fromRGB(74, 55, 104)
-    windowStroke.Transparency = 0.38
-    windowStroke.Thickness = 1
+    local innerWindowStroke = Instance.new("UIStroke")
+    innerWindowStroke.Name = "windowStroke"
+    innerWindowStroke.Parent = background
+    innerWindowStroke.Color = Color3.fromRGB(75, 63, 105)
+    innerWindowStroke.Transparency = 0.66
+    innerWindowStroke.Thickness = 1
 
-    backgroundGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(14, 15, 21)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(10, 11, 16))}
-    backgroundGradient.Rotation = 90
+    backgroundGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(15, 16, 23)),
+        ColorSequenceKeypoint.new(0.48, Color3.fromRGB(10, 11, 17)),
+        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(8, 9, 14))
+    }
+    backgroundGradient.Rotation = 105
     backgroundGradient.Name = "backgroundGradient"
     backgroundGradient.Parent = background
 
+    -- Large ambient light pools keep the shell from feeling flat.
+    if library.glowAsset then
+        local ambientTop = Instance.new("ImageLabel")
+        ambientTop.Name = "ambientTop"
+        ambientTop.Parent = background
+        ambientTop.BackgroundTransparency = 1
+        ambientTop.Image = library.glowAsset
+        ambientTop.ImageColor3 = library.accentColor
+        ambientTop.ImageTransparency = 0.88
+        ambientTop.ScaleType = Enum.ScaleType.Stretch
+        ambientTop.Position = UDim2.new(0.33, 0, 0, -150)
+        ambientTop.Size = UDim2.new(0, 500, 0, 360)
+        ambientTop.ZIndex = 3
+        ambientTop.Active = false
+
+        local ambientSide = Instance.new("ImageLabel")
+        ambientSide.Name = "ambientSide"
+        ambientSide.Parent = background
+        ambientSide.BackgroundTransparency = 1
+        ambientSide.Image = library.glowAsset
+        ambientSide.ImageColor3 = Color3.fromRGB(86, 61, 148)
+        ambientSide.ImageTransparency = 0.925
+        ambientSide.ScaleType = Enum.ScaleType.Stretch
+        ambientSide.Position = UDim2.new(1, -260, 1, -170)
+        ambientSide.Size = UDim2.new(0, 360, 0, 280)
+        ambientSide.ZIndex = 3
+        ambientSide.Active = false
+    end
+    library:AddNoise(background, 0.973)
+
     headerLabel.Name = "headerLabel"
     headerLabel.Parent = background
-    headerLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    headerLabel.BackgroundTransparency = 1.000
-    headerLabel.Size = UDim2.new(0, 758, 0, 62)
-    headerLabel.Font = Enum.Font.GothamSemibold
-    headerLabel.Text = title
+    headerLabel.BackgroundTransparency = 1
+    headerLabel.Size = UDim2.new(0, 250, 0, 62)
+    headerLabel.Font = Enum.Font.GothamBold
+    headerLabel.Text = "S K Y F A L L"
     headerLabel.TextColor3 = library.textPrimary
-    headerLabel.TextSize = 17.000
+    headerLabel.TextSize = 15
     headerLabel.TextXAlignment = Enum.TextXAlignment.Left
     headerLabel.RichText = true
+    headerLabel.ZIndex = 5
 
     headerPadding.Name = "headerPadding"
     headerPadding.Parent = headerLabel
@@ -1266,17 +1553,50 @@ function library:Init(key)
     headerPadding.PaddingTop = UDim.new(0, 12)
 
     if library.icon then
+        local headerIconGlow = library:AddSoftGlow(background, 0.80, 0, library.accentColor, 3)
+        if headerIconGlow then
+            headerIconGlow.Name = "headerIconGlow"
+            headerIconGlow.Position = UDim2.new(0, 2, 0, 1)
+            headerIconGlow.Size = UDim2.new(0, 56, 0, 56)
+        end
+
         local headerIcon = Instance.new("ImageLabel")
         headerIcon.Name = "headerIcon"
         headerIcon.Parent = background
         headerIcon.BackgroundTransparency = 1
-        headerIcon.Size = UDim2.new(0, 28, 0, 28)
-        headerIcon.Position = UDim2.new(0, 16, 0, 16)
+        headerIcon.Size = UDim2.new(0, 26, 0, 26)
+        headerIcon.Position = UDim2.new(0, 17, 0, 17)
         headerIcon.Image = library.icon
         headerIcon.ScaleType = Enum.ScaleType.Fit
-        headerIcon.ZIndex = 5
+        headerIcon.ZIndex = 6
         headerPadding.PaddingLeft = UDim.new(0, 54)
     end
+
+    local headerProduct = Instance.new("TextLabel")
+    headerProduct.Name = "headerProduct"
+    headerProduct.Parent = background
+    headerProduct.BackgroundTransparency = 1
+    headerProduct.Position = UDim2.new(0, 188, 0, 0)
+    headerProduct.Size = UDim2.new(0, 350, 0, 62)
+    headerProduct.Font = Enum.Font.Gotham
+    headerProduct.Text = productTitle
+    headerProduct.TextColor3 = library.textMuted
+    headerProduct.TextSize = 11
+    headerProduct.TextXAlignment = Enum.TextXAlignment.Left
+    headerProduct.ZIndex = 5
+
+    local headerVersion = Instance.new("TextLabel")
+    headerVersion.Name = "headerVersion"
+    headerVersion.Parent = background
+    headerVersion.BackgroundTransparency = 1
+    headerVersion.Position = UDim2.new(1, -120, 0, 0)
+    headerVersion.Size = UDim2.new(0, 96, 0, 62)
+    headerVersion.Font = Enum.Font.GothamMedium
+    headerVersion.Text = "v" .. library.version
+    headerVersion.TextColor3 = library.textFaint
+    headerVersion.TextSize = 10
+    headerVersion.TextXAlignment = Enum.TextXAlignment.Right
+    headerVersion.ZIndex = 5
 
     barFolder.Name = "barFolder"
     barFolder.Parent = background
@@ -1284,9 +1604,40 @@ function library:Init(key)
     bar.Name = "bar"
     bar.Parent = barFolder
     bar.BackgroundColor3 = library.accentColor
-    bar.BackgroundTransparency = 0.58
+    bar.BackgroundTransparency = 0.52
     bar.Size = UDim2.new(0, 758, 0, 1)
     bar.BorderSizePixel = 0
+    bar.ZIndex = 6
+
+    local headerBarGradient = Instance.new("UIGradient")
+    headerBarGradient.Name = "headerBarGradient"
+    headerBarGradient.Parent = bar
+    headerBarGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0.00, accentDark(0.42)),
+        ColorSequenceKeypoint.new(0.26, library.accentColor),
+        ColorSequenceKeypoint.new(0.72, library.gradientEnabled and library.accentColorBottom or library.accentColor),
+        ColorSequenceKeypoint.new(1.00, accentDark(0.36))
+    }
+    headerBarGradient.Transparency = NumberSequence.new{
+        NumberSequenceKeypoint.new(0.00, 0.92),
+        NumberSequenceKeypoint.new(0.24, 0.22),
+        NumberSequenceKeypoint.new(0.72, 0.48),
+        NumberSequenceKeypoint.new(1.00, 0.95)
+    }
+
+    if library.glowAsset then
+        local headerGlow = Instance.new("ImageLabel")
+        headerGlow.Name = "headerGlow"
+        headerGlow.Parent = background
+        headerGlow.BackgroundTransparency = 1
+        headerGlow.Image = library.glowAsset
+        headerGlow.ImageColor3 = library.accentColor
+        headerGlow.ImageTransparency = 0.88
+        headerGlow.Position = UDim2.new(0, -16, 0, 39)
+        headerGlow.Size = UDim2.new(1, 32, 0, 48)
+        headerGlow.ScaleType = Enum.ScaleType.Stretch
+        headerGlow.ZIndex = 3
+    end
 
     barCorner.CornerRadius = UDim.new(0, 2)
     barCorner.Name = "barCorner"
@@ -1300,9 +1651,14 @@ function library:Init(key)
     tabButtonsEdge.Name = "tabButtonsEdge"
     tabButtonsEdge.Parent = background
     tabButtonsEdge.AnchorPoint = Vector2.new(0.5, 0.5)
-    tabButtonsEdge.BackgroundColor3 = library.strokeColor
+    tabButtonsEdge.BackgroundColor3 = Color3.fromRGB(27, 27, 38)
     tabButtonsEdge.Position = UDim2.new(0, 104, 0, 278)
     tabButtonsEdge.Size = UDim2.new(0, 184, 0, 414)
+    tabButtonsEdge.BorderSizePixel = 0
+    tabButtonsEdge.ClipsDescendants = false
+    tabButtonsEdge.ZIndex = 3
+
+    local sidebarGlow = library:AddSoftGlow(tabButtonsEdge, 0.93, 13, Color3.fromRGB(103, 74, 177), 1)
 
     tabButtonCorner.CornerRadius = UDim.new(0, 12)
     tabButtonCorner.Name = "tabButtonCorner"
@@ -1315,6 +1671,8 @@ function library:Init(key)
     tabButtons.ClipsDescendants = true
     tabButtons.Position = UDim2.new(0.5, 0, 0, 171)
     tabButtons.Size = UDim2.new(0, 182, 0, 328)
+    tabButtons.BorderSizePixel = 0
+    tabButtons.ZIndex = 4
 
     tabButtonCorner_2.CornerRadius = UDim.new(0, 11)
     tabButtonCorner_2.Name = "tabButtonCorner"
@@ -1338,6 +1696,22 @@ function library:Init(key)
     tabButtonPadding.PaddingRight = UDim.new(0, 10)
     tabButtonPadding.PaddingTop = UDim.new(0, 10)
 
+    local navKicker = Instance.new("TextLabel")
+    navKicker.Name = "navKicker"
+    navKicker.Parent = tabButtons
+    navKicker.BackgroundTransparency = 1
+    navKicker.Size = UDim2.new(0, 162, 0, 18)
+    navKicker.Font = Enum.Font.GothamSemibold
+    navKicker.Text = "NAVIGATION"
+    navKicker.TextColor3 = library.textFaint
+    navKicker.TextSize = 8
+    navKicker.TextXAlignment = Enum.TextXAlignment.Left
+    navKicker.LayoutOrder = -100
+
+    local navKickerPadding = Instance.new("UIPadding")
+    navKickerPadding.Parent = navKicker
+    navKickerPadding.PaddingLeft = UDim.new(0, 5)
+
     -- Compact status card keeps the sidebar alive without adding noise.
     local statusCard = Instance.new("Frame")
     statusCard.Name = "statusCard"
@@ -1351,10 +1725,12 @@ function library:Init(key)
     statusCorner.CornerRadius = UDim.new(0, 9)
     statusCorner.Parent = statusCard
     local statusStroke = Instance.new("UIStroke")
-    statusStroke.Color = library.strokeColor
-    statusStroke.Transparency = 0.28
+    statusStroke.Color = library.strokeSoftColor
+    statusStroke.Transparency = 0.56
     statusStroke.Thickness = 1
     statusStroke.Parent = statusCard
+
+    local statusGlow = library:AddSoftGlow(statusCard, 0.94, 9, Color3.fromRGB(107, 79, 177), 1)
 
     local statusDot = Instance.new("Frame")
     statusDot.Name = "statusDot"
@@ -1367,6 +1743,12 @@ function library:Init(key)
     local statusDotCorner = Instance.new("UICorner")
     statusDotCorner.CornerRadius = UDim.new(1, 0)
     statusDotCorner.Parent = statusDot
+    local statusDotStroke = Instance.new("UIStroke")
+    statusDotStroke.Color = library.accentColor
+    statusDotStroke.Transparency = 0.35
+    statusDotStroke.Thickness = 2
+    statusDotStroke.Parent = statusDot
+    library:AddSoftGlow(statusDot, 0.68, 7, library.accentColor, 1)
 
     local statusText = Instance.new("TextLabel")
     statusText.Name = "statusText"
@@ -1397,9 +1779,14 @@ function library:Init(key)
     containerEdge.Name = "containerEdge"
     containerEdge.Parent = background
     containerEdge.AnchorPoint = Vector2.new(0.5, 0.5)
-    containerEdge.BackgroundColor3 = library.strokeColor
+    containerEdge.BackgroundColor3 = Color3.fromRGB(28, 28, 40)
     containerEdge.Position = UDim2.new(0, 478, 0, 278)
     containerEdge.Size = UDim2.new(0, 548, 0, 414)
+    containerEdge.BorderSizePixel = 0
+    containerEdge.ClipsDescendants = false
+    containerEdge.ZIndex = 3
+
+    local contentGlow = library:AddSoftGlow(containerEdge, 0.945, 14, Color3.fromRGB(94, 66, 157), 1)
 
     tabButtonCorner_3.CornerRadius = UDim.new(0, 12)
     tabButtonCorner_3.Name = "tabButtonCorner"
@@ -1408,18 +1795,101 @@ function library:Init(key)
     container.Name = "container"
     container.Parent = containerEdge
     container.AnchorPoint = Vector2.new(0.5, 0.5)
-    container.BackgroundColor3 = Color3.fromRGB(15, 16, 22)
+    container.BackgroundColor3 = Color3.fromRGB(13, 14, 20)
     container.Position = UDim2.new(0.5, 0, 0.5, 0)
     container.Size = UDim2.new(0, 546, 0, 412)
+    container.BorderSizePixel = 0
+    container.ZIndex = 4
 
     containerCorner.CornerRadius = UDim.new(0, 11)
     containerCorner.Name = "containerCorner"
     containerCorner.Parent = container
 
-    containerGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(17, 18, 25)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(13, 14, 20))}
-    containerGradient.Rotation = 90
+    containerGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(18, 19, 27)),
+        ColorSequenceKeypoint.new(0.55, Color3.fromRGB(13, 14, 20)),
+        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(11, 12, 18))
+    }
+    containerGradient.Rotation = 100
     containerGradient.Name = "containerGradient"
     containerGradient.Parent = container
+
+    -- Content header gives every tab a stronger visual hierarchy.
+    local contentHeader = Instance.new("Frame")
+    contentHeader.Name = "contentHeader"
+    contentHeader.Parent = container
+    contentHeader.BackgroundTransparency = 1
+    contentHeader.Size = UDim2.new(1, 0, 0, 58)
+    contentHeader.ZIndex = 6
+
+    local contentKicker = Instance.new("TextLabel")
+    contentKicker.Name = "contentKicker"
+    contentKicker.Parent = contentHeader
+    contentKicker.BackgroundTransparency = 1
+    contentKicker.Position = UDim2.new(0, 16, 0, 8)
+    contentKicker.Size = UDim2.new(1, -120, 0, 23)
+    contentKicker.Font = Enum.Font.GothamSemibold
+    contentKicker.Text = productTitle
+    contentKicker.TextColor3 = library.textPrimary
+    contentKicker.TextSize = 17
+    contentKicker.TextXAlignment = Enum.TextXAlignment.Left
+    contentKicker.TextTruncate = Enum.TextTruncate.AtEnd
+    contentKicker.ZIndex = 7
+
+    local contentSubtitle = Instance.new("TextLabel")
+    contentSubtitle.Name = "contentSubtitle"
+    contentSubtitle.Parent = contentHeader
+    contentSubtitle.BackgroundTransparency = 1
+    contentSubtitle.Position = UDim2.new(0, 16, 0, 31)
+    contentSubtitle.Size = UDim2.new(1, -120, 0, 17)
+    contentSubtitle.Font = Enum.Font.Gotham
+    contentSubtitle.Text = "Skyfall controls"
+    contentSubtitle.TextColor3 = library.textMuted
+    contentSubtitle.TextSize = 10
+    contentSubtitle.TextXAlignment = Enum.TextXAlignment.Left
+    contentSubtitle.ZIndex = 7
+
+    local contentTabPill = Instance.new("TextLabel")
+    contentTabPill.Name = "contentTabPill"
+    contentTabPill.Parent = contentHeader
+    contentTabPill.BackgroundColor3 = Color3.fromRGB(29, 24, 43)
+    contentTabPill.BackgroundTransparency = 0.10
+    contentTabPill.Position = UDim2.new(1, -86, 0, 15)
+    contentTabPill.Size = UDim2.new(0, 70, 0, 25)
+    contentTabPill.Font = Enum.Font.GothamSemibold
+    contentTabPill.Text = "PLAY"
+    contentTabPill.TextColor3 = library.accentColor
+    contentTabPill.TextSize = 9
+    contentTabPill.ZIndex = 7
+    local contentTabCorner = Instance.new("UICorner")
+    contentTabCorner.CornerRadius = UDim.new(1, 0)
+    contentTabCorner.Parent = contentTabPill
+    local contentTabStroke = Instance.new("UIStroke")
+    contentTabStroke.Color = library.accentColor
+    contentTabStroke.Transparency = 0.74
+    contentTabStroke.Thickness = 1
+    contentTabStroke.Parent = contentTabPill
+    library:AddSoftGlow(contentTabPill, 0.90, 8, library.accentColor, 5)
+
+    local headerDivider = Instance.new("Frame")
+    headerDivider.Name = "contentHeaderDivider"
+    headerDivider.Parent = container
+    headerDivider.BackgroundColor3 = library.strokeColor
+    headerDivider.BackgroundTransparency = 0.56
+    headerDivider.BorderSizePixel = 0
+    headerDivider.Position = UDim2.new(0, 14, 0, 57)
+    headerDivider.Size = UDim2.new(1, -28, 0, 1)
+    headerDivider.ZIndex = 6
+
+    local function updateContentHeader(tabTitle)
+        contentSubtitle.Text = library:TabSubtitle(tabTitle)
+        contentTabPill.Text = string.upper(tostring(tabTitle or ""))
+        local targetW = math.clamp(TextService:GetTextSize(contentTabPill.Text, 9, Enum.Font.GothamSemibold, Vector2.new(math.huge, 25)).X + 24, 54, 104)
+        TweenService:Create(contentTabPill, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, targetW, 0, 25),
+            Position = UDim2.new(1, -(targetW + 16), 0, 15)
+        }):Play()
+    end
 
     local tabIndicator = Instance.new("Frame")
     tabIndicator.Name = "tabIndicator"
@@ -1432,6 +1902,11 @@ function library:Init(key)
     local tabIndicatorCorner = Instance.new("UICorner")
     tabIndicatorCorner.CornerRadius = UDim.new(1, 0)
     tabIndicatorCorner.Parent = tabIndicator
+    local tabIndicatorGlowStroke = Instance.new("UIStroke")
+    tabIndicatorGlowStroke.Color = library.accentColor
+    tabIndicatorGlowStroke.Transparency = 0.30
+    tabIndicatorGlowStroke.Thickness = 3
+    tabIndicatorGlowStroke.Parent = tabIndicator
 
     CreateTween("tab_indicator", 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
@@ -1455,38 +1930,90 @@ function library:Init(key)
 
         tabButton.Name = "tabButton"
         tabButton.Parent = tabButtons
-        tabButton.BackgroundColor3 = Color3.fromRGB(34, 27, 53)
-        tabButton.BackgroundTransparency = 1.000
-        tabButton.ClipsDescendants = true
+        tabButton.BackgroundColor3 = Color3.fromRGB(31, 25, 46)
+        tabButton.BackgroundTransparency = 1
+        tabButton.ClipsDescendants = false
         tabButton.Size = UDim2.new(0, 162, 0, 36)
         tabButton.AutoButtonColor = false
         tabButton.Font = Enum.Font.GothamMedium
         tabButton.Text = title
         tabButton.TextColor3 = library.textMuted
-        tabButton.TextSize = 14.000
+        tabButton.TextSize = 13
         tabButton.TextXAlignment = Enum.TextXAlignment.Left
         tabButton.RichText = true
+        tabButton.ZIndex = 6
 
         local tabCorner = Instance.new("UICorner")
-        tabCorner.CornerRadius = UDim.new(0, 8)
+        tabCorner.CornerRadius = UDim.new(0, 9)
         tabCorner.Parent = tabButton
+
+        local tabStroke = Instance.new("UIStroke")
+        tabStroke.Name = "tabStroke"
+        tabStroke.Parent = tabButton
+        tabStroke.Color = library.accentColor
+        tabStroke.Transparency = 1
+        tabStroke.Thickness = 1
+
+        local tabGradient = Instance.new("UIGradient")
+        tabGradient.Name = "tabGradient"
+        tabGradient.Parent = tabButton
+        tabGradient.Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(42, 31, 65)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(26, 23, 39))
+        }
+        tabGradient.Rotation = 0
+
+        local tabGlow = library:AddSoftGlow(tabButton, 1, 10, library.accentColor, 4)
+
+        local tabIcon = Instance.new("ImageLabel")
+        tabIcon.Name = "tabLucideIcon"
+        tabIcon.Parent = tabButton
+        tabIcon.BackgroundTransparency = 1
+        tabIcon.Position = UDim2.new(0, 13, 0.5, -8)
+        tabIcon.Size = UDim2.new(0, 16, 0, 16)
+        tabIcon.ImageColor3 = library.textMuted
+        tabIcon.ImageTransparency = 0.12
+        tabIcon.ScaleType = Enum.ScaleType.Fit
+        tabIcon.ZIndex = 8
+        local tabIconAsset = nil
+        tabIcon.Visible = false
+
         local tabPad = Instance.new("UIPadding")
         tabPad.PaddingLeft = UDim.new(0, 16)
         tabPad.Parent = tabButton
 
+        task.spawn(function()
+            local asset = library:LoadLucideIcon(library:LucideForTab(title))
+            if asset and tabButton.Parent then
+                tabIconAsset = asset
+                tabIcon.Image = asset
+                tabIcon.Visible = true
+                tabPad.PaddingLeft = UDim.new(0, 39)
+                if TabLibrary.CurrentTab == title then
+                    tabIcon.ImageColor3 = library.accentColor
+                    tabIcon.ImageTransparency = 0
+                else
+                    tabIcon.ImageColor3 = library.textMuted
+                    tabIcon.ImageTransparency = 0.12
+                end
+            end
+        end)
+
         page.Name = "page"
         page.Parent = container
         page.Active = true
-        page.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        page.BackgroundTransparency = 1.000
+        page.BackgroundTransparency = 1
         page.BorderSizePixel = 0
-        page.Size = UDim2.new(0, 546, 0, 412)
+        page.Position = UDim2.new(0, 0, 0, 58)
+        page.Size = UDim2.new(0, 546, 0, 354)
         page.BottomImage = "http://www.roblox.com/asset/?id=3062506202"
         page.MidImage = "http://www.roblox.com/asset/?id=3062506202"
-        page.ScrollBarThickness = 2
+        page.ScrollBarThickness = 1
         page.TopImage = "http://www.roblox.com/asset/?id=3062506202"
-        page.ScrollBarImageColor3 = library.accentColor
+        page.ScrollBarImageColor3 = accentDark(0.72)
+        page.ScrollBarImageTransparency = 0.38
         page.Visible = false
+        page.ZIndex = 5
         
         pageLayout.Name = "pageLayout"
         pageLayout.Parent = page
@@ -1505,16 +2032,31 @@ function library:Init(key)
             page.Visible = true
             tabButton.TextColor3 = library.textPrimary
             tabButton.BackgroundTransparency = 0
+            tabStroke.Transparency = 0.72
+            if tabGlow then tabGlow.ImageTransparency = 0.83 end
+            if tabIcon.Visible then
+                tabIcon.ImageColor3 = library.accentColor
+                tabIcon.ImageTransparency = 0
+            end
             TabLibrary.CurrentTab = title
+            updateContentHeader(title)
             task.defer(function() moveIndicatorTo(tabButton) end)
         end
         
         tabButton.MouseEnter:Connect(function()
             if TabLibrary.CurrentTab ~= title then
                 TweenService:Create(tabButton, TweenTable["hover"], {
-                    BackgroundTransparency = 0.55,
+                    BackgroundTransparency = 0.62,
                     TextColor3 = library.textSecondary
                 }):Play()
+                TweenService:Create(tabStroke, TweenTable["hover"], {Transparency = 0.88}):Play()
+                if tabGlow then TweenService:Create(tabGlow, TweenTable["hover"], {ImageTransparency = 0.93}):Play() end
+                if tabIcon.Visible then
+                    TweenService:Create(tabIcon, TweenTable["hover"], {
+                        ImageColor3 = library.textSecondary,
+                        ImageTransparency = 0
+                    }):Play()
+                end
             end
         end)
         tabButton.MouseLeave:Connect(function()
@@ -1523,6 +2065,14 @@ function library:Init(key)
                     BackgroundTransparency = 1,
                     TextColor3 = library.textMuted
                 }):Play()
+                TweenService:Create(tabStroke, TweenTable["hover"], {Transparency = 1}):Play()
+                if tabGlow then TweenService:Create(tabGlow, TweenTable["hover"], {ImageTransparency = 1}):Play() end
+                if tabIcon.Visible then
+                    TweenService:Create(tabIcon, TweenTable["hover"], {
+                        ImageColor3 = library.textMuted,
+                        ImageTransparency = 0.12
+                    }):Play()
+                end
             end
         end)
 
@@ -1531,25 +2081,47 @@ function library:Init(key)
                 library._closeActivePopup()
             end
             TabLibrary.CurrentTab = title
-            for i,v in pairs(container:GetChildren()) do
+            updateContentHeader(title)
+
+            for _,v in pairs(container:GetChildren()) do
                 if v:IsA("ScrollingFrame") then
                     v.Visible = false
                 end
             end
             page.Visible = true
 
-            for i,v in pairs(tabButtons:GetChildren()) do
+            for _,v in pairs(tabButtons:GetChildren()) do
                 if v:IsA("TextButton") then
                     TweenService:Create(v, TweenTable["tab_text_colour"], {
                         TextColor3 = library.textMuted,
                         BackgroundTransparency = 1
                     }):Play()
+                    local s = v:FindFirstChild("tabStroke")
+                    if s then TweenService:Create(s, TweenTable["tab_text_colour"], {Transparency = 1}):Play() end
+                    local g = v:FindFirstChild("softGlow")
+                    if g and g:IsA("ImageLabel") then TweenService:Create(g, TweenTable["tab_text_colour"], {ImageTransparency = 1}):Play() end
+                    local i = v:FindFirstChild("tabLucideIcon")
+                    if i and i:IsA("ImageLabel") and i.Visible then
+                        TweenService:Create(i, TweenTable["tab_text_colour"], {
+                            ImageColor3 = library.textMuted,
+                            ImageTransparency = 0.12
+                        }):Play()
+                    end
                 end
             end
+
             TweenService:Create(tabButton, TweenTable["tab_text_colour"], {
                 TextColor3 = library.textPrimary,
                 BackgroundTransparency = 0
             }):Play()
+            TweenService:Create(tabStroke, TweenTable["tab_text_colour"], {Transparency = 0.72}):Play()
+            if tabGlow then TweenService:Create(tabGlow, TweenTable["tab_text_colour"], {ImageTransparency = 0.83}):Play() end
+            if tabIcon.Visible then
+                TweenService:Create(tabIcon, TweenTable["tab_text_colour"], {
+                    ImageColor3 = library.accentColor,
+                    ImageTransparency = 0
+                }):Play()
+            end
             moveIndicatorTo(tabButton)
         end)
 
@@ -2073,6 +2645,15 @@ function library:Init(key)
             toggleEdgeCorner.Name = "toggleEdgeCorner"
             toggleEdgeCorner.Parent = toggleEdge
 
+            local toggleStroke = Instance.new("UIStroke")
+            toggleStroke.Name = "toggleStroke"
+            toggleStroke.Parent = toggleEdge
+            toggleStroke.Color = library.strokeColor
+            toggleStroke.Transparency = 0.62
+            toggleStroke.Thickness = 1
+
+            local toggleGlow = library:AddSoftGlow(toggleEdge, 1, 10, library.accentColor, 0)
+
             toggle.Name = "toggle"
             toggle.Parent = toggleEdge
             toggle.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -2084,10 +2665,13 @@ function library:Init(key)
             toggleCorner.Name = "toggleCorner"
             toggleCorner.Parent = toggle
 
-            toggleGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(34, 34, 34)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(28, 28, 28))}
+            toggleGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0.00, Color3.fromRGB(53, 54, 68)),
+                ColorSequenceKeypoint.new(1.00, Color3.fromRGB(38, 39, 51))
+            }
             toggleGradient.Rotation = 90
             toggleGradient.Name = "toggleGradient"
-            toggleGradient.Parent = toggle
+            toggleGradient.Parent = toggleEdge
 
             toggleDesign.Name = "toggleDesign"
             toggleDesign.Parent = toggleEdge
@@ -2101,6 +2685,13 @@ function library:Init(key)
             toggleDesignCorner.CornerRadius = UDim.new(1, 0)
             toggleDesignCorner.Name = "toggleDesignCorner"
             toggleDesignCorner.Parent = toggleDesign
+
+            local knobStroke = Instance.new("UIStroke")
+            knobStroke.Name = "toggleKnobGlow"
+            knobStroke.Parent = toggleDesign
+            knobStroke.Color = library.accentColor
+            knobStroke.Transparency = 1
+            knobStroke.Thickness = 2
 
             toggleDesignGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(255,255,255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(224,224,232))}
             toggleDesignGradient.Rotation = 90
@@ -2151,12 +2742,36 @@ function library:Init(key)
             local function renderToggle(animated)
                 local knobPos = On and UDim2.new(1, -17, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
                 local trackColor = On and library.accentColor or Color3.fromRGB(47, 49, 62)
+                local strokeColor = On and library.accentColor or library.strokeColor
+                local strokeTransparency = On and 0.38 or 0.62
+                local knobGlowTransparency = On and 0.48 or 1
+                local glowTransparency = On and 0.78 or 1
+                toggleGradient.Color = On and ColorSequence.new{
+                    ColorSequenceKeypoint.new(0.00, library.accentColor),
+                    ColorSequenceKeypoint.new(1.00, library.gradientEnabled and library.accentColorBottom or library.accentColor)
+                } or ColorSequence.new{
+                    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(53, 54, 68)),
+                    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(38, 39, 51))
+                }
+
                 if animated then
                     TweenService:Create(toggleDesign, TweenTable["toggle_form"], {Position = knobPos}):Play()
                     TweenService:Create(toggleEdge, TweenTable["toggle_form"], {BackgroundColor3 = trackColor}):Play()
+                    TweenService:Create(toggleStroke, TweenTable["toggle_form"], {
+                        Color = strokeColor,
+                        Transparency = strokeTransparency
+                    }):Play()
+                    TweenService:Create(knobStroke, TweenTable["toggle_form"], {Transparency = knobGlowTransparency}):Play()
+                    if toggleGlow then
+                        TweenService:Create(toggleGlow, TweenTable["toggle_form"], {ImageTransparency = glowTransparency}):Play()
+                    end
                 else
                     toggleDesign.Position = knobPos
                     toggleEdge.BackgroundColor3 = trackColor
+                    toggleStroke.Color = strokeColor
+                    toggleStroke.Transparency = strokeTransparency
+                    knobStroke.Transparency = knobGlowTransparency
+                    if toggleGlow then toggleGlow.ImageTransparency = glowTransparency end
                 end
             end
 
@@ -2864,20 +3479,44 @@ function library:Init(key)
                 end)
 
                 textboxFrame.MouseEnter:Connect(function()
-                    TweenService:Create(textboxLabel, TweenTable["TextBox"], {TextColor3 = Color3.fromRGB(210, 210, 210)}):Play()
+                    TweenService:Create(textboxLabel, TweenTable["TextBox"], {TextColor3 = library.textPrimary}):Play()
+                    if not textBoxValues:IsFocused() then
+                        TweenService:Create(textboxStroke, TweenTable["TextBox"], {
+                            Color = library.accentSoft,
+                            Transparency = 0.72
+                        }):Play()
+                    end
                 end)
 
                 textboxFrame.MouseLeave:Connect(function()
-                    TweenService:Create(textboxLabel, TweenTable["TextBox"], {TextColor3 = Color3.fromRGB(190, 190, 190)}):Play()
+                    TweenService:Create(textboxLabel, TweenTable["TextBox"], {TextColor3 = library.textSecondary}):Play()
+                    if not textBoxValues:IsFocused() then
+                        TweenService:Create(textboxStroke, TweenTable["TextBox"], {
+                            Color = library.strokeColor,
+                            Transparency = 0.62
+                        }):Play()
+                    end
                 end)
 
                 textBoxValues.Focused:Connect(function()
                     textBoxValues:GetPropertyChangedSignal("Text"):Connect(ResizeTextBox)
-                    TweenService:Create(textbox, TweenTable["TextBox"], {BackgroundColor3 = library.accentColor}):Play()
+                    TweenService:Create(textbox, TweenTable["TextBox"], {BackgroundColor3 = accentDark(0.72)}):Play()
+                    TweenService:Create(textboxStroke, TweenTable["TextBox"], {
+                        Color = library.accentColor,
+                        Transparency = 0.26
+                    }):Play()
+                    TweenService:Create(textboxTwo, TweenTable["TextBox"], {BackgroundColor3 = library.inputHoverColor}):Play()
+                    if textboxGlow then TweenService:Create(textboxGlow, TweenTable["TextBox"], {ImageTransparency = 0.82}):Play() end
                 end)
 
                 textBoxValues.FocusLost:Connect(function()
-                    TweenService:Create(textbox, TweenTable["TextBox"], {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
+                    TweenService:Create(textbox, TweenTable["TextBox"], {BackgroundColor3 = library.strokeColor}):Play()
+                    TweenService:Create(textboxStroke, TweenTable["TextBox"], {
+                        Color = library.strokeColor,
+                        Transparency = 0.62
+                    }):Play()
+                    TweenService:Create(textboxTwo, TweenTable["TextBox"], {BackgroundColor3 = library.inputColor}):Play()
+                    if textboxGlow then TweenService:Create(textboxGlow, TweenTable["TextBox"], {ImageTransparency = 1}):Play() end
                 end)
 
                 textBoxValues.FocusLost:Connect(function(enterPressed)
@@ -2993,6 +3632,15 @@ function library:Init(key)
                 textboxCorner.CornerRadius = UDim.new(0, 7)
                 textboxCorner.Name = "textboxCorner"
                 textboxCorner.Parent = textbox
+
+                local textboxStroke = Instance.new("UIStroke")
+                textboxStroke.Name = "textboxStroke"
+                textboxStroke.Parent = textbox
+                textboxStroke.Color = library.strokeColor
+                textboxStroke.Transparency = 0.62
+                textboxStroke.Thickness = 1
+
+                local textboxGlow = library:AddSoftGlow(textbox, 1, 9, library.accentColor, 0)
 
                 textboxTwo.Name = "textboxTwo"
                 textboxTwo.Parent = textbox
@@ -3413,7 +4061,7 @@ function library:Init(key)
             selectorFrame.Name = "selectorFrame"
             selectorFrame.Parent = page
             selectorFrame.BackgroundTransparency = 1
-            selectorFrame.ClipsDescendants = true
+            selectorFrame.ClipsDescendants = false
             selectorFrame.Size = UDim2.new(0, _w, 0, 34)
 
             local selectorLabel = Instance.new("TextLabel")
@@ -3445,9 +4093,18 @@ function library:Init(key)
             selector.ClipsDescendants = false
 
             local selectorCorner = Instance.new("UICorner")
-            selectorCorner.CornerRadius = UDim.new(0, 7)
+            selectorCorner.CornerRadius = UDim.new(0, 8)
             selectorCorner.Name = "selectorCorner"
             selectorCorner.Parent = selector
+
+            local selectorStroke = Instance.new("UIStroke")
+            selectorStroke.Name = "selectorStroke"
+            selectorStroke.Parent = selector
+            selectorStroke.Color = library.strokeColor
+            selectorStroke.Transparency = 0.60
+            selectorStroke.Thickness = 1
+
+            local selectorGlow = library:AddSoftGlow(selector, 1, 10, library.accentColor, 0)
 
             local selectorTwo = Instance.new("Frame")
             selectorTwo.Name = "selectorTwo"
@@ -3488,17 +4145,32 @@ function library:Init(key)
             selectorTextPadding.Parent = selectorText
             selectorTextPadding.PaddingLeft = UDim.new(0, 5)
 
-            local selectorArrow = Instance.new("TextLabel")
+            local selectorArrow = Instance.new("ImageLabel")
             selectorArrow.Name = "selectorArrow"
             selectorArrow.Parent = selectorTwo
             selectorArrow.BackgroundTransparency = 1
-            selectorArrow.Size = UDim2.new(0, 18, 1, 0)
-            selectorArrow.Position = UDim2.new(1, -18, 0, 0)
-            selectorArrow.Font = Enum.Font.GothamBold
-            selectorArrow.Text = "⌄"
-            selectorArrow.TextColor3 = library.textMuted
-            selectorArrow.TextSize = 10
+            selectorArrow.Size = UDim2.new(0, 13, 0, 13)
+            selectorArrow.Position = UDim2.new(1, -18, 0.5, -6)
+            selectorArrow.ImageColor3 = library.textMuted
+            selectorArrow.ScaleType = Enum.ScaleType.Fit
             selectorArrow.ZIndex = 5
+            local chevronAsset = library:LoadLucideIcon("chevron-down")
+            if chevronAsset then
+                selectorArrow.Image = chevronAsset
+            else
+                selectorArrow.Visible = false
+                local fallbackArrow = Instance.new("TextLabel")
+                fallbackArrow.Name = "selectorArrowFallback"
+                fallbackArrow.Parent = selectorTwo
+                fallbackArrow.BackgroundTransparency = 1
+                fallbackArrow.Size = UDim2.new(0, 18, 1, 0)
+                fallbackArrow.Position = UDim2.new(1, -18, 0, 0)
+                fallbackArrow.Font = Enum.Font.GothamMedium
+                fallbackArrow.Text = "v"
+                fallbackArrow.TextColor3 = library.textMuted
+                fallbackArrow.TextSize = 9
+                fallbackArrow.ZIndex = 5
+            end
 
             local selectorContainer = Instance.new("Frame")
             selectorContainer.Name = "selectorContainer"
@@ -3514,9 +4186,13 @@ function library:Init(key)
             selectorContainerCorner.Parent = selectorContainer
 
             local selectorContainerStroke = Instance.new("UIStroke")
-            selectorContainerStroke.Color = library.strokeColor
+            selectorContainerStroke.Color = library.strokeSoftColor
+            selectorContainerStroke.Transparency = 0.42
             selectorContainerStroke.Thickness = 1
             selectorContainerStroke.Parent = selectorContainer
+
+            local selectorContainerGlow = library:AddSoftGlow(selectorContainer, 0.89, 12, library.accentColor, 0)
+            if selectorContainerGlow then selectorContainerGlow.Visible = false end
 
             local selectorContainerLayout = Instance.new("UIListLayout")
             selectorContainerLayout.Name = "selectorContainerLayout"
@@ -3542,10 +4218,24 @@ function library:Init(key)
             local function collapseSelector()
                 selectorOpen = false
                 library._closeActivePopup = nil
-                TweenService:Create(selectorArrow, TweenTable["chevron"], {Rotation = 0}):Play()
+                TweenService:Create(selectorArrow, TweenTable["chevron"], {
+                    Rotation = 0,
+                    ImageColor3 = library.textMuted
+                }):Play()
                 TweenService:Create(selectorContainer, TweenTable["selector_drop"], {Size = UDim2.new(0, dropW, 0, 0)}):Play()
                 TweenService:Create(selectorFrame, TweenTable["selector_drop"], {Size = UDim2.new(0, _w, 0, closedH)}):Play()
                 TweenService:Create(selector, TweenTable["selector"], {BackgroundColor3 = library.strokeColor}):Play()
+                TweenService:Create(selectorStroke, TweenTable["selector"], {
+                    Color = library.strokeColor,
+                    Transparency = 0.60
+                }):Play()
+                if selectorGlow then TweenService:Create(selectorGlow, TweenTable["selector"], {ImageTransparency = 1}):Play() end
+                if selectorContainerGlow then
+                    TweenService:Create(selectorContainerGlow, TweenTable["selector_drop"], {ImageTransparency = 1}):Play()
+                    task.delay(0.15, function()
+                        if not selectorOpen and selectorContainerGlow then selectorContainerGlow.Visible = false end
+                    end)
+                end
                 task.delay(0.15, UpdatePageSize)
             end
 
@@ -3553,11 +4243,23 @@ function library:Init(key)
                 if library._closeActivePopup then library._closeActivePopup() end
                 selectorOpen = true
                 library._closeActivePopup = collapseSelector
-                TweenService:Create(selectorArrow, TweenTable["chevron"], {Rotation = 180}):Play()
+                if selectorContainerGlow then
+                    selectorContainerGlow.Visible = true
+                    selectorContainerGlow.ImageTransparency = 0.91
+                end
+                TweenService:Create(selectorArrow, TweenTable["chevron"], {
+                    Rotation = 180,
+                    ImageColor3 = library.accentColor
+                }):Play()
                 local optH = countOptions() * 28
                 selectorContainer.Size = UDim2.new(0, dropW, 0, optH)
                 TweenService:Create(selectorFrame, TweenTable["selector_drop"], {Size = UDim2.new(0, _w, 0, closedH + optH)}):Play()
-                TweenService:Create(selector, TweenTable["selector"], {BackgroundColor3 = accentDark(0.78)}):Play()
+                TweenService:Create(selector, TweenTable["selector"], {BackgroundColor3 = accentDark(0.72)}):Play()
+                TweenService:Create(selectorStroke, TweenTable["selector"], {
+                    Color = library.accentColor,
+                    Transparency = 0.32
+                }):Play()
+                if selectorGlow then TweenService:Create(selectorGlow, TweenTable["selector"], {ImageTransparency = 0.84}):Play() end
                 task.delay(0.15, UpdatePageSize)
             end
 
@@ -3566,12 +4268,47 @@ function library:Init(key)
             end
 
             selector.MouseButton1Click:Connect(toggleSelector)
+            selector.MouseEnter:Connect(function()
+                if not selectorOpen then
+                    TweenService:Create(selectorStroke, TweenTable["hover"], {
+                        Color = library.accentSoft,
+                        Transparency = 0.68
+                    }):Play()
+                    TweenService:Create(selectorTwo, TweenTable["hover"], {BackgroundColor3 = library.inputHoverColor}):Play()
+                    if selectorGlow then TweenService:Create(selectorGlow, TweenTable["hover"], {ImageTransparency = 0.95}):Play() end
+                end
+            end)
+            selector.MouseLeave:Connect(function()
+                if not selectorOpen then
+                    TweenService:Create(selectorStroke, TweenTable["hover"], {
+                        Color = library.strokeColor,
+                        Transparency = 0.60
+                    }):Play()
+                    TweenService:Create(selectorTwo, TweenTable["hover"], {BackgroundColor3 = library.inputColor}):Play()
+                    if selectorGlow then TweenService:Create(selectorGlow, TweenTable["hover"], {ImageTransparency = 1}):Play() end
+                end
+            end)
 
             local function hookOptionClick(optionButton)
+                optionButton.MouseEnter:Connect(function()
+                    TweenService:Create(optionButton, TweenTable["hover"], {
+                        BackgroundTransparency = 0.42,
+                        TextColor3 = optionButton.Text == selectorText.Text and library.accentColor or library.textPrimary
+                    }):Play()
+                end)
+                optionButton.MouseLeave:Connect(function()
+                    TweenService:Create(optionButton, TweenTable["hover"], {
+                        BackgroundTransparency = 1,
+                        TextColor3 = optionButton.Text == selectorText.Text and library.accentColor or Color3.fromRGB(160, 160, 175)
+                    }):Play()
+                end)
                 optionButton.MouseButton1Click:Connect(function()
                     for _, x in next, selectorContainer:GetChildren() do
                         if x:IsA("TextButton") then
-                            TweenService:Create(x, TweenTable["selector"], {TextColor3 = Color3.fromRGB(160, 160, 160)}):Play()
+                            TweenService:Create(x, TweenTable["selector"], {
+                                TextColor3 = Color3.fromRGB(160, 160, 175),
+                                BackgroundTransparency = 1
+                            }):Play()
                         end
                     end
                     TweenService:Create(optionButton, TweenTable["selector"], {TextColor3 = library.accentColor}):Play()
@@ -3585,13 +4322,17 @@ function library:Init(key)
                 local optionButton = Instance.new("TextButton")
                 optionButton.Name = "optionButton"
                 optionButton.Parent = selectorContainer
+                optionButton.BackgroundColor3 = library.surfaceHoverColor
                 optionButton.BackgroundTransparency = 1
-                optionButton.Size = UDim2.new(1, 0, 0, 28)
+                optionButton.Size = UDim2.new(1, -6, 0, 28)
                 optionButton.AutoButtonColor = false
                 optionButton.Font = Enum.Font.Gotham
                 optionButton.Text = v
                 optionButton.TextColor3 = Color3.fromRGB(160, 160, 160)
                 optionButton.TextSize = 12
+                local optionCorner = Instance.new("UICorner")
+                optionCorner.CornerRadius = UDim.new(0, 6)
+                optionCorner.Parent = optionButton
                 if optionButton.Text == default then
                     optionButton.TextColor3 = library.accentColor
                     callback(selectorText.Text)
@@ -3610,13 +4351,17 @@ function library:Init(key)
                 local optionButton = Instance.new("TextButton")
                 optionButton.Name = "optionButton"
                 optionButton.Parent = selectorContainer
+                optionButton.BackgroundColor3 = library.surfaceHoverColor
                 optionButton.BackgroundTransparency = 1
-                optionButton.Size = UDim2.new(1, 0, 0, 28)
+                optionButton.Size = UDim2.new(1, -6, 0, 28)
                 optionButton.AutoButtonColor = false
                 optionButton.Font = Enum.Font.Gotham
                 optionButton.Text = new
                 optionButton.TextColor3 = Color3.fromRGB(140, 140, 140)
                 optionButton.TextSize = 12
+                local optionCorner = Instance.new("UICorner")
+                optionCorner.CornerRadius = UDim.new(0, 6)
+                optionCorner.Parent = optionButton
 
                 hookOptionClick(optionButton)
                 if selectorOpen then expandSelector() end
@@ -3733,7 +4478,7 @@ function library:Init(key)
             sliderFrame.Parent = page
             sliderFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             sliderFrame.BackgroundTransparency = 1.000
-            sliderFrame.ClipsDescendants = true
+            sliderFrame.ClipsDescendants = false
             sliderFrame.Position = UDim2.new(0.00499999989, 0, 0.667630076, 0)
             sliderFrame.Size = UDim2.new(0, _w, 0, 46)
 
@@ -3751,8 +4496,9 @@ function library:Init(key)
             sliderButton.Name = "sliderButton"
             sliderButton.Parent = sliderFolder
             sliderButton.BackgroundColor3 = library.strokeColor
+            sliderButton.BackgroundTransparency = 1
             sliderButton.Position = UDim2.new(0, 0, 1, -12)
-            sliderButton.Size = UDim2.new(0, _w, 0, 8)
+            sliderButton.Size = UDim2.new(0, _w, 0, 10)
             sliderButton.AutoButtonColor = false
             sliderButton.Font = Enum.Font.SourceSans
             sliderButton.Text = ""
@@ -3765,8 +4511,9 @@ function library:Init(key)
 
             sliderBackground.Name = "sliderBackground"
             sliderBackground.Parent = sliderButton
-            sliderBackground.BackgroundColor3 = Color3.fromRGB(39, 40, 50)
-            sliderBackground.Size = UDim2.new(0, _w - 2, 0, 6)
+            sliderBackground.BackgroundColor3 = Color3.fromRGB(37, 38, 49)
+            sliderBackground.Position = UDim2.new(0, 1, 0.5, -2)
+            sliderBackground.Size = UDim2.new(0, _w - 2, 0, 4)
             sliderBackground.ClipsDescendants = true
 
             sliderButtonCorner_2.CornerRadius = UDim.new(1, 0)
@@ -3788,13 +4535,16 @@ function library:Init(key)
             sliderIndicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             sliderIndicator.BorderSizePixel = 0
             sliderIndicator.Position = UDim2.new(0, 0, 0, 0)
-            sliderIndicator.Size = UDim2.new(0, 0, 0, 6)
+            sliderIndicator.Size = UDim2.new(0, 0, 0, 4)
 
             sliderIndicatorStraint.Name = "sliderIndicatorStraint"
             sliderIndicatorStraint.Parent = sliderIndicator
-            sliderIndicatorStraint.MaxSize = Vector2.new(_w, 6)
+            sliderIndicatorStraint.MaxSize = Vector2.new(_w, 4)
 
-            sliderIndicatorGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, library.accentColor), ColorSequenceKeypoint.new(1, accentDark(0.81))}
+            sliderIndicatorGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, library.accentColor),
+                ColorSequenceKeypoint.new(1, library.gradientEnabled and library.accentColorBottom or library.accentColor)
+            }
             sliderIndicatorGradient.Rotation = 90
             sliderIndicatorGradient.Name = "sliderIndicatorGradient"
             sliderIndicatorGradient.Parent = sliderIndicator
@@ -3802,6 +4552,35 @@ function library:Init(key)
             sliderIndicatorCorner.CornerRadius = UDim.new(1, 0)
             sliderIndicatorCorner.Name = "sliderIndicatorCorner"
             sliderIndicatorCorner.Parent = sliderIndicator
+
+            local sliderIndicatorGlow = Instance.new("UIStroke")
+            sliderIndicatorGlow.Name = "sliderIndicatorGlow"
+            sliderIndicatorGlow.Parent = sliderIndicator
+            sliderIndicatorGlow.Color = library.accentColor
+            sliderIndicatorGlow.Transparency = 0.58
+            sliderIndicatorGlow.Thickness = 2
+
+            local sliderThumb = Instance.new("Frame")
+            sliderThumb.Name = "sliderThumb"
+            sliderThumb.Parent = sliderButton
+            sliderThumb.AnchorPoint = Vector2.new(0.5, 0.5)
+            sliderThumb.BackgroundColor3 = Color3.fromRGB(234, 226, 255)
+            sliderThumb.BorderSizePixel = 0
+            sliderThumb.Position = UDim2.new(0, 0, 0.5, 0)
+            sliderThumb.Size = UDim2.new(0, 11, 0, 11)
+            sliderThumb.ZIndex = 6
+
+            local sliderThumbCorner = Instance.new("UICorner")
+            sliderThumbCorner.CornerRadius = UDim.new(1, 0)
+            sliderThumbCorner.Parent = sliderThumb
+
+            local sliderThumbStroke = Instance.new("UIStroke")
+            sliderThumbStroke.Color = library.accentColor
+            sliderThumbStroke.Transparency = 0.18
+            sliderThumbStroke.Thickness = 1.5
+            sliderThumbStroke.Parent = sliderThumb
+
+            local sliderThumbGlow = library:AddSoftGlow(sliderThumb, 0.72, 9, library.accentColor, 4)
 
             sliderBackgroundPadding.Name = "sliderBackgroundPadding"
             sliderBackgroundPadding.Parent = sliderBackground
@@ -3854,7 +4633,8 @@ function library:Init(key)
             local calc3 = calc2 / calc1
             local calc4 = calc3 * sliderBackground.AbsoluteSize.X
             local Calculation = calc4
-            sliderIndicator.Size = UDim2.new(0, Calculation, 0, 6)
+            sliderIndicator.Size = UDim2.new(0, Calculation, 0, 4)
+            sliderThumb.Position = UDim2.new(0, math.clamp(Calculation + 1, 1, math.max(sliderBackground.AbsoluteSize.X, 1)), 0.5, 0)
             sliderValue.Text = values.default
 
             CreateTween("slider_drag", 0.008)
@@ -3874,7 +4654,11 @@ function library:Init(key)
                 else
                     ValueNum = math.floor(raw)
                 end
-                TweenService:Create(sliderIndicator, TweenTable["slider_drag"], {Size = UDim2.new(0, rel * sliderBackground.AbsoluteSize.X, 0, 6)}):Play()
+                local sliderX = rel * sliderBackground.AbsoluteSize.X
+                TweenService:Create(sliderIndicator, TweenTable["slider_drag"], {Size = UDim2.new(0, sliderX, 0, 4)}):Play()
+                TweenService:Create(sliderThumb, TweenTable["slider_drag"], {
+                    Position = UDim2.new(0, math.clamp(sliderX + 1, 1, math.max(sliderBackground.AbsoluteSize.X, 1)), 0.5, 0)
+                }):Play()
                 local maxDisplay = _step and values.max or (values.max - 1)
                 slideText = compare and ValueNum .. compareSign .. tostring(maxDisplay) .. suffix or ValueNum .. suffix
                 sliderValue.Text = slideText
@@ -3884,7 +4668,20 @@ function library:Init(key)
             sliderButton.InputBegan:Connect(function(inp)
                 if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
                     sliding = true
+                    TweenService:Create(sliderThumb, TweenTable["hover"], {Size = UDim2.new(0, 13, 0, 13)}):Play()
+                    if sliderThumbGlow then TweenService:Create(sliderThumbGlow, TweenTable["hover"], {ImageTransparency = 0.58}):Play() end
                     updateSliderFromX(inp.Position.X)
+                end
+            end)
+
+            sliderButton.MouseEnter:Connect(function()
+                TweenService:Create(sliderLabel, TweenTable["hover"], {TextColor3 = library.textPrimary}):Play()
+                if sliderThumbGlow then TweenService:Create(sliderThumbGlow, TweenTable["hover"], {ImageTransparency = 0.64}):Play() end
+            end)
+            sliderButton.MouseLeave:Connect(function()
+                TweenService:Create(sliderLabel, TweenTable["hover"], {TextColor3 = library.textSecondary}):Play()
+                if not sliding and sliderThumbGlow then
+                    TweenService:Create(sliderThumbGlow, TweenTable["hover"], {ImageTransparency = 0.72}):Play()
                 end
             end)
 
@@ -3897,6 +4694,8 @@ function library:Init(key)
             table.insert(library._connections, UserInputService.InputEnded:Connect(function(inp)
                 if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
                     sliding = false
+                    TweenService:Create(sliderThumb, TweenTable["hover"], {Size = UDim2.new(0, 11, 0, 11)}):Play()
+                    if sliderThumbGlow then TweenService:Create(sliderThumbGlow, TweenTable["hover"], {ImageTransparency = 0.72}):Play() end
                 end
             end))
 
@@ -3908,7 +4707,8 @@ function library:Init(key)
                 local ncalc2 = ncalc1 / calc1
                 local ncalc3 = ncalc2 * sliderBackground.AbsoluteSize.X
                 local nCalculation = ncalc3
-                sliderIndicator.Size = UDim2.new(0, nCalculation, 0, 6)
+                sliderIndicator.Size = UDim2.new(0, nCalculation, 0, 4)
+                sliderThumb.Position = UDim2.new(0, math.clamp(nCalculation + 1, 1, math.max(sliderBackground.AbsoluteSize.X, 1)), 0.5, 0)
                 slideText = compare and new .. compareSign .. tostring(values.max - 1) .. suffix or new .. suffix
                 sliderValue.Text = slideText
                 return SliderFunctions
@@ -4257,10 +5057,25 @@ function library:Init(key)
 
             rightBar.Name = "rightBar"
             rightBar.Parent = sectionFrame
-            rightBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+            rightBar.BackgroundColor3 = library.strokeColor
+            rightBar.BackgroundTransparency = 0.54
             rightBar.BorderSizePixel = 0
-            rightBar.Position = UDim2.new(0.308080822, 0, 0.479166657, 0)
-            rightBar.Size = UDim2.new(0, 403, 0, 1)
+            rightBar.Position = UDim2.new(0, 4, 0.5, 0)
+            rightBar.Size = UDim2.new(1, -8, 0, 1)
+
+            local separatorGradient = Instance.new("UIGradient")
+            separatorGradient.Parent = rightBar
+            separatorGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, accentDark(0.6)),
+                ColorSequenceKeypoint.new(0.5, library.strokeColor),
+                ColorSequenceKeypoint.new(1, accentDark(0.6))
+            }
+            separatorGradient.Transparency = NumberSequence.new{
+                NumberSequenceKeypoint.new(0, 0.95),
+                NumberSequenceKeypoint.new(0.18, 0.25),
+                NumberSequenceKeypoint.new(0.82, 0.25),
+                NumberSequenceKeypoint.new(1, 0.95)
+            }
 
             UpdatePageSize()
 
@@ -4793,32 +5608,96 @@ function library:Init(key)
             gbFrame.BorderSizePixel = 0
 
             local gbCorner = Instance.new("UICorner")
-            gbCorner.CornerRadius = UDim.new(0, 10)
+            gbCorner.CornerRadius = UDim.new(0, 11)
             gbCorner.Parent = gbFrame
+
+            local gbGradient = Instance.new("UIGradient")
+            gbGradient.Name = "groupboxGradient"
+            gbGradient.Parent = gbFrame
+            gbGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0.00, Color3.fromRGB(22, 23, 32)),
+                ColorSequenceKeypoint.new(0.52, Color3.fromRGB(19, 20, 28)),
+                ColorSequenceKeypoint.new(1.00, Color3.fromRGB(16, 17, 24))
+            }
+            gbGradient.Rotation = 110
 
             local gbStroke = Instance.new("UIStroke")
             gbStroke.Color = library.strokeColor
-            gbStroke.Transparency = 0.18
+            gbStroke.Transparency = 0.48
             gbStroke.Thickness = 1
             gbStroke.Parent = gbFrame
+
+            local gbAccentStroke = Instance.new("UIStroke")
+            gbAccentStroke.Name = "groupboxAmbientStroke"
+            gbAccentStroke.Color = library.accentSoft
+            gbAccentStroke.Transparency = 0.94
+            gbAccentStroke.Thickness = 3
+            gbAccentStroke.Parent = gbFrame
+
+            -- Soft lavender light leaking into the card from its header.
+            if library.glowAsset then
+                local gbHeaderAura = Instance.new("ImageLabel")
+                gbHeaderAura.Name = "groupboxHeaderAura"
+                gbHeaderAura.Parent = gbFrame
+                gbHeaderAura.BackgroundTransparency = 1
+                gbHeaderAura.Image = library.glowAsset
+                gbHeaderAura.ImageColor3 = library.accentColor
+                gbHeaderAura.ImageTransparency = 0.94
+                gbHeaderAura.ScaleType = Enum.ScaleType.Stretch
+                gbHeaderAura.Position = UDim2.new(0, -44, 0, -44)
+                gbHeaderAura.Size = UDim2.new(0, 180, 0, 120)
+                gbHeaderAura.ZIndex = 1
+                gbHeaderAura.Active = false
+            end
+
+            local gbIcon = Instance.new("ImageLabel")
+            gbIcon.Name = "gbLucideIcon"
+            gbIcon.Parent = gbFrame
+            gbIcon.BackgroundTransparency = 1
+            gbIcon.Size = UDim2.new(0, 14, 0, 14)
+            gbIcon.Position = UDim2.new(0, 11, 0, 12)
+            gbIcon.ImageColor3 = library.accentColor
+            gbIcon.ImageTransparency = 0
+            gbIcon.ScaleType = Enum.ScaleType.Fit
+            local gbIconAsset = nil
+            gbIcon.Visible = false
 
             local gbTitle = Instance.new("TextLabel")
             gbTitle.Name = "gbTitle"
             gbTitle.Parent = gbFrame
             gbTitle.BackgroundTransparency = 1
-            gbTitle.Size = UDim2.new(1, -20, 0, 28)
-            gbTitle.Position = UDim2.new(0, 10, 0, 5)
+            gbTitle.Size = UDim2.new(1, -42, 0, 28)
+            gbTitle.Position = UDim2.new(0, 11, 0, 5)
             gbTitle.Font = Enum.Font.GothamSemibold
             gbTitle.Text = string.upper(title)
             gbTitle.TextColor3 = library.accentColor
-            gbTitle.TextSize = 11
+            gbTitle.TextSize = 10
             gbTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+            task.spawn(function()
+                local asset = library:LoadLucideIcon(library:LucideForSection(title))
+                if asset and gbFrame.Parent then
+                    gbIconAsset = asset
+                    gbIcon.Image = asset
+                    gbIcon.Visible = true
+                    gbTitle.Position = UDim2.new(0, 33, 0, 5)
+                end
+            end)
+
+            local gbHeaderRule = Instance.new("Frame")
+            gbHeaderRule.Name = "gbHeaderRule"
+            gbHeaderRule.Parent = gbFrame
+            gbHeaderRule.BackgroundColor3 = library.strokeColor
+            gbHeaderRule.BackgroundTransparency = 0.78
+            gbHeaderRule.BorderSizePixel = 0
+            gbHeaderRule.Position = UDim2.new(0, 10, 0, 33)
+            gbHeaderRule.Size = UDim2.new(1, -20, 0, 1)
 
             local gbContent = Instance.new("Frame")
             gbContent.Name = "gbContent"
             gbContent.Parent = gbFrame
             gbContent.BackgroundTransparency = 1
-            gbContent.Position = UDim2.new(0, 0, 0, 34)
+            gbContent.Position = UDim2.new(0, 0, 0, 38)
             gbContent.Size = UDim2.new(1, 0, 0, 0)
             gbContent.AutomaticSize = Enum.AutomaticSize.Y
 
@@ -4826,14 +5705,14 @@ function library:Init(key)
             gbContentLayout.Parent = gbContent
             gbContentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
             gbContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            gbContentLayout.Padding = UDim.new(0, 6)
+            gbContentLayout.Padding = UDim.new(0, 5)
 
             local gbPadding = Instance.new("UIPadding")
             gbPadding.Parent = gbContent
-            gbPadding.PaddingBottom = UDim.new(0, 10)
+            gbPadding.PaddingBottom = UDim.new(0, 11)
             gbPadding.PaddingLeft = UDim.new(0, 10)
             gbPadding.PaddingRight = UDim.new(0, 10)
-            gbPadding.PaddingTop = UDim.new(0, 2)
+            gbPadding.PaddingTop = UDim.new(0, 4)
 
             local gbComponentWidth = _groupColWidth - 20
             local function gbUpdateSize()
@@ -4881,25 +5760,46 @@ function library:Init(key)
         --
         function Components:Open()
             TabLibrary.CurrentTab = title
-            for i,v in pairs(container:GetChildren()) do 
+            updateContentHeader(title)
+            for _,v in pairs(container:GetChildren()) do 
                 if v:IsA("ScrollingFrame") then
                     v.Visible = false
                 end
             end
             page.Visible = true
 
-            for i,v in pairs(tabButtons:GetChildren()) do
+            for _,v in pairs(tabButtons:GetChildren()) do
                 if v:IsA("TextButton") then
                     TweenService:Create(v, TweenTable["tab_text_colour"], {
                         TextColor3 = library.textMuted,
                         BackgroundTransparency = 1
                     }):Play()
+                    local s = v:FindFirstChild("tabStroke")
+                    if s then TweenService:Create(s, TweenTable["tab_text_colour"], {Transparency = 1}):Play() end
+                    local g = v:FindFirstChild("softGlow")
+                    if g and g:IsA("ImageLabel") then TweenService:Create(g, TweenTable["tab_text_colour"], {ImageTransparency = 1}):Play() end
+                    local i = v:FindFirstChild("tabLucideIcon")
+                    if i and i:IsA("ImageLabel") and i.Visible then
+                        TweenService:Create(i, TweenTable["tab_text_colour"], {
+                            ImageColor3 = library.textMuted,
+                            ImageTransparency = 0.12
+                        }):Play()
+                    end
                 end
             end
+
             TweenService:Create(tabButton, TweenTable["tab_text_colour"], {
                 TextColor3 = library.textPrimary,
                 BackgroundTransparency = 0
             }):Play()
+            TweenService:Create(tabStroke, TweenTable["tab_text_colour"], {Transparency = 0.72}):Play()
+            if tabGlow then TweenService:Create(tabGlow, TweenTable["tab_text_colour"], {ImageTransparency = 0.83}):Play() end
+            if tabIcon.Visible then
+                TweenService:Create(tabIcon, TweenTable["tab_text_colour"], {
+                    ImageColor3 = library.accentColor,
+                    ImageTransparency = 0
+                }):Play()
+            end
             moveIndicatorTo(tabButton)
 
             return Components
@@ -4942,7 +5842,8 @@ function library:Init(key)
     --
     function TabLibrary:Text(text)
         text = text or "new text"
-        headerLabel.Text = text
+        headerProduct.Text = text
+        contentKicker.Text = text
 
         return TabLibrary
     end
