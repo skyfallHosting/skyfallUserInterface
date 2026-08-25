@@ -1531,6 +1531,10 @@ function library:Init(key)
     elseif productTitle:lower():find("skyfall hub", 1, true) then
         productTitle = productTitle:gsub("^[Ss][Kk][Yy][Ff][Aa][Ll][Ll]%s+[Hh][Uu][Bb]%s*", "")
     end
+    -- Titles may already arrive formatted by a caller.  Strip the brand and
+    -- version before the watermark adds its own dedicated fields.
+    productTitle = productTitle:gsub("^%s*[Ss][Kk][Yy][Ff][Aa][Ll][Ll]%s*[•·|]%s*", "")
+    productTitle = productTitle:gsub("%s*[•·|]%s*v%d[%d%.]*%s*$", "")
     if productTitle == "" then productTitle = "Skyfall Hub" end
 
     if not library.icon then
