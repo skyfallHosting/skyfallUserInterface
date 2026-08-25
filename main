@@ -6339,8 +6339,8 @@ function library:Init(key)
             UpdatePageSize()
         end
 
-        local function _createGroupbox(column, title)
-            _ensureGroupRow()
+        local function _createGroupbox(column, title, fullWidth)
+            if not fullWidth then _ensureGroupRow() end
 
             local gbFrame = Instance.new("Frame")
             gbFrame.Name = "groupbox_" .. title
@@ -6458,7 +6458,7 @@ function library:Init(key)
             gbPadding.PaddingRight = UDim.new(0, 12)
             gbPadding.PaddingTop = UDim.new(0, 6)
 
-            local gbComponentWidth = _groupColWidth - 24
+            local gbComponentWidth = (fullWidth and _baseW or _groupColWidth) - 24
             local function gbUpdateSize()
                 UpdatePageSize()
             end
@@ -6503,6 +6503,13 @@ function library:Init(key)
         function Components:AddRightModule(title, subtabs)
             _ensureGroupRow()
             return _createModule(_rightColumn, title or "Module", subtabs)
+        end
+        function Components:AddFullModule(title, subtabs)
+            local gb = _createGroupbox(page, title or "Module", true)
+            if subtabs and #subtabs > 0 then
+                return gb:NewSubTabGroup(subtabs)
+            end
+            return gb
         end
         --
         function Components:Open()
