@@ -81,7 +81,7 @@ local drag = function(obj, latency)
 end
 
 library = {
-    version = "2.3.0",
+    version = "2.4.0",
     title = title or "Skyfall Hub",
     fps = 0,
     rank = "private",
@@ -2270,7 +2270,7 @@ function library:Init(key)
 
             button.Name = "button"
             button.Parent = buttonFrame
-            button.BackgroundColor3 = library.strokeColor
+            button.BackgroundColor3 = library.accentSoft
             button.Size = UDim2.new(0, _w, 0, 32)
             button.AutoButtonColor = false
             button.Font = Enum.Font.SourceSans
@@ -2285,11 +2285,11 @@ function library:Init(key)
             buttonBackground.Name = "buttonBackground"
             buttonBackground.Parent = button
             buttonBackground.AnchorPoint = Vector2.new(0.5, 0.5)
-            buttonBackground.BackgroundColor3 = library.inputColor
+            buttonBackground.BackgroundColor3 = Color3.fromRGB(22, 18, 34)
             buttonBackground.Position = UDim2.new(0.5, 0, 0.5, 0)
             buttonBackground.Size = UDim2.new(0, _w - 2, 0, 30)
 
-            buttonGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(29, 30, 40)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(23, 24, 33))}
+            buttonGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(34, 25, 52)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(23, 19, 35))}
             buttonGradient.Rotation = 90
             buttonGradient.Name = "buttonGradient"
             buttonGradient.Parent = buttonBackground
@@ -2308,22 +2308,22 @@ function library:Init(key)
             buttonLabel.Size = UDim2.new(0, _w - 2, 0, 30)
             buttonLabel.Font = Enum.Font.GothamMedium
             buttonLabel.Text = text
-            buttonLabel.TextColor3 = library.textSecondary
+            buttonLabel.TextColor3 = library.accentColor
             buttonLabel.TextSize = 12.000
             buttonLabel.RichText = true
 
             button.MouseEnter:Connect(function()
-                TweenService:Create(button, TweenTable["hover"], {BackgroundColor3 = accentDark(0.72)}):Play()
+                TweenService:Create(button, TweenTable["hover"], {BackgroundColor3 = library.accentColor}):Play()
             end)
             button.MouseLeave:Connect(function()
-                TweenService:Create(button, TweenTable["hover"], {BackgroundColor3 = library.strokeColor}):Play()
+                TweenService:Create(button, TweenTable["hover"], {BackgroundColor3 = library.accentSoft}):Play()
             end)
 
             button.MouseButton1Down:Connect(function()
-                TweenService:Create(buttonLabel, TweenTable["hover"], {TextColor3 = library.accentColor}):Play()
+                TweenService:Create(buttonLabel, TweenTable["hover"], {TextColor3 = library.textPrimary}):Play()
             end)
             button.MouseButton1Up:Connect(function()
-                TweenService:Create(buttonLabel, TweenTable["hover"], {TextColor3 = library.textSecondary}):Play()
+                TweenService:Create(buttonLabel, TweenTable["hover"], {TextColor3 = library.accentColor}):Play()
             end)
 
             button.MouseButton1Click:Connect(function()
@@ -2375,7 +2375,7 @@ function library:Init(key)
         
                     button.Name = "button"
                     button.Parent = buttonFrame
-                    button.BackgroundColor3 = library.strokeColor
+                    button.BackgroundColor3 = library.accentSoft
                     button.Size = UDim2.new(0, NewSizeX - Amnt, 0, 32)
                     button.AutoButtonColor = false
                     button.Font = Enum.Font.SourceSans
@@ -2390,11 +2390,11 @@ function library:Init(key)
                     buttonBackground.Name = "buttonBackground"
                     buttonBackground.Parent = button
                     buttonBackground.AnchorPoint = Vector2.new(0.5, 0.5)
-                    buttonBackground.BackgroundColor3 = library.inputColor
+                    buttonBackground.BackgroundColor3 = Color3.fromRGB(22, 18, 34)
                     buttonBackground.Position = UDim2.new(0.5, 0, 0.5, 0)
                     buttonBackground.Size = UDim2.new(0, (NewSizeX - 2) - Amnt, 0, 22)
         
-                    buttonGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(29, 30, 40)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(23, 24, 33))}
+                    buttonGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(34, 25, 52)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(23, 19, 35))}
                     buttonGradient.Rotation = 90
                     buttonGradient.Name = "buttonGradient"
                     buttonGradient.Parent = buttonBackground
@@ -2413,24 +2413,24 @@ function library:Init(key)
                     buttonLabel.Size = UDim2.new(0, NewSizeX - 2, 0, 22)
                     buttonLabel.Font = Enum.Font.GothamMedium
                     buttonLabel.Text = text
-                    buttonLabel.TextColor3 = library.textSecondary
+                    buttonLabel.TextColor3 = library.accentColor
                     buttonLabel.TextSize = 12.000
                     buttonLabel.RichText = true
 
                     UpdatePageSize()
         
                     button.MouseEnter:Connect(function()
-                        TweenService:Create(button, TweenTable["hover"], {BackgroundColor3 = accentDark(0.72)}):Play()
+                        TweenService:Create(button, TweenTable["hover"], {BackgroundColor3 = library.accentColor}):Play()
                     end)
                     button.MouseLeave:Connect(function()
-                        TweenService:Create(button, TweenTable["hover"], {BackgroundColor3 = library.strokeColor}):Play()
+                        TweenService:Create(button, TweenTable["hover"], {BackgroundColor3 = library.accentSoft}):Play()
                     end)
         
                     button.MouseButton1Down:Connect(function()
-                        TweenService:Create(buttonLabel, TweenTable["hover"], {TextColor3 = library.accentColor}):Play()
+                        TweenService:Create(buttonLabel, TweenTable["hover"], {TextColor3 = library.textPrimary}):Play()
                     end)
                     button.MouseButton1Up:Connect(function()
-                        TweenService:Create(buttonLabel, TweenTable["hover"], {TextColor3 = library.textSecondary}):Play()
+                        TweenService:Create(buttonLabel, TweenTable["hover"], {TextColor3 = library.accentColor}):Play()
                     end)
         
                     button.MouseButton1Click:Connect(function()
@@ -4460,329 +4460,341 @@ function library:Init(key)
             local page = self._page
             local _w = self._width
             local UpdatePageSize = self._updateSize
+
             text = text or "slider"
             suffix = suffix or ""
             compare = compare or false
             compareSign = compareSign or "/"
-            values = values or {
-                min = values.min or 0,
-                max = values.max or 100,
-                default = values.default or 0
-            }
+            values = values or {}
             callback = callback or function() end
 
-            local _step = values.step
-            if not _step then
-                values.max = values.max + 1
+            local minValue = tonumber(values.min) or 0
+            local maxValue = tonumber(values.max) or 100
+            local ValueNum = tonumber(values.default)
+            if ValueNum == nil then ValueNum = minValue end
+            local step = tonumber(values.step)
+
+            if maxValue < minValue then
+                minValue, maxValue = maxValue, minValue
             end
+            ValueNum = math.clamp(ValueNum, minValue, maxValue)
 
+            -- A slider is deliberately split into two isolated bands:
+            --  0..22  = label/value
+            -- 28..50  = hit target + rail
+            -- No UIListLayout is parented to either band, so nothing can
+            -- silently override the rail/thumb positions.
             local sliderFrame = Instance.new("Frame")
-            local sliderFolder = Instance.new("Folder")
-            local textboxFolderLayout = Instance.new("UIListLayout")
-            local sliderButton = Instance.new("TextButton")
-            local sliderButtonCorner = Instance.new("UICorner")
-            local sliderBackground = Instance.new("Frame")
-            local sliderButtonCorner_2 = Instance.new("UICorner")
-            local sliderBackgroundGradient = Instance.new("UIGradient")
-            local sliderBackgroundLayout = Instance.new("UIListLayout")
-            local sliderIndicator = Instance.new("Frame")
-            local sliderIndicatorStraint = Instance.new("UISizeConstraint")
-            local sliderIndicatorGradient = Instance.new("UIGradient")
-            local sliderIndicatorCorner = Instance.new("UICorner")
-            local sliderBackgroundPadding = Instance.new("UIPadding")
-            local sliderButtonLayout = Instance.new("UIListLayout")
-            local sliderLabel = Instance.new("TextLabel")
-            local sliderPadding = Instance.new("UIPadding")
-            local sliderValue = Instance.new("TextLabel")
-
             sliderFrame.Name = "sliderFrame"
             sliderFrame.Parent = page
-            sliderFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            sliderFrame.BackgroundTransparency = 1.000
+            sliderFrame.BackgroundTransparency = 1
             sliderFrame.ClipsDescendants = false
-            sliderFrame.Position = UDim2.new(0.00499999989, 0, 0.667630076, 0)
-            sliderFrame.Size = UDim2.new(0, _w, 0, 46)
+            sliderFrame.Size = UDim2.new(0, _w, 0, 54)
 
-            sliderFolder.Name = "sliderFolder"
-            sliderFolder.Parent = sliderFrame
-
-            textboxFolderLayout.Name = "textboxFolderLayout"
-            textboxFolderLayout.Parent = sliderFolder
-            textboxFolderLayout.FillDirection = Enum.FillDirection.Horizontal
-            textboxFolderLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-            textboxFolderLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            textboxFolderLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
-            textboxFolderLayout.Padding = UDim.new(0, 4)
-
-            sliderButton.Name = "sliderButton"
-            sliderButton.Parent = sliderFolder
-            sliderButton.BackgroundColor3 = library.strokeColor
-            sliderButton.BackgroundTransparency = 1
-            sliderButton.Position = UDim2.new(0, 0, 1, -12)
-            sliderButton.Size = UDim2.new(0, _w, 0, 10)
-            sliderButton.AutoButtonColor = false
-            sliderButton.Font = Enum.Font.SourceSans
-            sliderButton.Text = ""
-            sliderButton.TextColor3 = Color3.fromRGB(0, 0, 0)
-            sliderButton.TextSize = 14.000
-
-            sliderButtonCorner.CornerRadius = UDim.new(1, 0)
-            sliderButtonCorner.Name = "sliderButtonCorner"
-            sliderButtonCorner.Parent = sliderButton
-
-            sliderBackground.Name = "sliderBackground"
-            sliderBackground.Parent = sliderButton
-            sliderBackground.BackgroundColor3 = Color3.fromRGB(37, 38, 49)
-            sliderBackground.Position = UDim2.new(0, 1, 0.5, -2)
-            sliderBackground.Size = UDim2.new(0, _w - 2, 0, 4)
-            sliderBackground.ClipsDescendants = true
-
-            sliderButtonCorner_2.CornerRadius = UDim.new(1, 0)
-            sliderButtonCorner_2.Name = "sliderButtonCorner"
-            sliderButtonCorner_2.Parent = sliderBackground
-
-            sliderBackgroundGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(44, 45, 56)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(32, 33, 43))}
-            sliderBackgroundGradient.Rotation = 90
-            sliderBackgroundGradient.Name = "sliderBackgroundGradient"
-            sliderBackgroundGradient.Parent = sliderBackground
-
-            sliderBackgroundLayout.Name = "sliderBackgroundLayout"
-            sliderBackgroundLayout.Parent = sliderBackground
-            sliderBackgroundLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            sliderBackgroundLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-
-            sliderIndicator.Name = "sliderIndicator"
-            sliderIndicator.Parent = sliderBackground
-            sliderIndicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            sliderIndicator.BorderSizePixel = 0
-            sliderIndicator.Position = UDim2.new(0, 0, 0, 0)
-            sliderIndicator.Size = UDim2.new(0, 0, 0, 4)
-
-            sliderIndicatorStraint.Name = "sliderIndicatorStraint"
-            sliderIndicatorStraint.Parent = sliderIndicator
-            sliderIndicatorStraint.MaxSize = Vector2.new(_w, 4)
-
-            sliderIndicatorGradient.Color = ColorSequence.new{
-                ColorSequenceKeypoint.new(0, library.accentColor),
-                ColorSequenceKeypoint.new(1, library.gradientEnabled and library.accentColorBottom or library.accentColor)
-            }
-            sliderIndicatorGradient.Rotation = 90
-            sliderIndicatorGradient.Name = "sliderIndicatorGradient"
-            sliderIndicatorGradient.Parent = sliderIndicator
-
-            sliderIndicatorCorner.CornerRadius = UDim.new(1, 0)
-            sliderIndicatorCorner.Name = "sliderIndicatorCorner"
-            sliderIndicatorCorner.Parent = sliderIndicator
-
-            local sliderIndicatorGlow = Instance.new("UIStroke")
-            sliderIndicatorGlow.Name = "sliderIndicatorGlow"
-            sliderIndicatorGlow.Parent = sliderIndicator
-            sliderIndicatorGlow.Color = library.accentColor
-            sliderIndicatorGlow.Transparency = 0.58
-            sliderIndicatorGlow.Thickness = 2
-
-            local sliderThumb = Instance.new("Frame")
-            sliderThumb.Name = "sliderThumb"
-            sliderThumb.Parent = sliderButton
-            sliderThumb.AnchorPoint = Vector2.new(0.5, 0.5)
-            sliderThumb.BackgroundColor3 = Color3.fromRGB(234, 226, 255)
-            sliderThumb.BorderSizePixel = 0
-            sliderThumb.Position = UDim2.new(0, 0, 0.5, 0)
-            sliderThumb.Size = UDim2.new(0, 11, 0, 11)
-            sliderThumb.ZIndex = 6
-
-            local sliderThumbCorner = Instance.new("UICorner")
-            sliderThumbCorner.CornerRadius = UDim.new(1, 0)
-            sliderThumbCorner.Parent = sliderThumb
-
-            local sliderThumbStroke = Instance.new("UIStroke")
-            sliderThumbStroke.Color = library.accentColor
-            sliderThumbStroke.Transparency = 0.18
-            sliderThumbStroke.Thickness = 1.5
-            sliderThumbStroke.Parent = sliderThumb
-
-            local sliderThumbGlow = library:AddSoftGlow(sliderThumb, 0.72, 9, library.accentColor, 4)
-
-            sliderBackgroundPadding.Name = "sliderBackgroundPadding"
-            sliderBackgroundPadding.Parent = sliderBackground
-            sliderBackgroundPadding.PaddingBottom = UDim.new(0, 0)
-            sliderBackgroundPadding.PaddingLeft = UDim.new(0, 0)
-            sliderBackgroundPadding.PaddingRight = UDim.new(0, 0)
-            sliderBackgroundPadding.PaddingTop = UDim.new(0, 0)
-
-            sliderButtonLayout.Name = "sliderButtonLayout"
-            sliderButtonLayout.Parent = sliderButton
-            sliderButtonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-            sliderButtonLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            sliderButtonLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-
+            local sliderLabel = Instance.new("TextLabel")
             sliderLabel.Name = "sliderLabel"
             sliderLabel.Parent = sliderFrame
-            sliderLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            sliderLabel.BackgroundTransparency = 1.000
-            sliderLabel.Size = UDim2.new(0, _w, 0, 24)
+            sliderLabel.BackgroundTransparency = 1
+            sliderLabel.Position = UDim2.new(0, 2, 0, 0)
+            sliderLabel.Size = UDim2.new(1, -4, 0, 22)
             sliderLabel.Font = Enum.Font.Gotham
             sliderLabel.Text = text
             sliderLabel.TextColor3 = library.textSecondary
-            sliderLabel.TextSize = 13.000
-            sliderLabel.TextWrapped = true
+            sliderLabel.TextSize = 13
             sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
+            sliderLabel.TextYAlignment = Enum.TextYAlignment.Center
             sliderLabel.RichText = true
 
-            sliderPadding.Name = "sliderPadding"
-            sliderPadding.Parent = sliderLabel
-            sliderPadding.PaddingBottom = UDim.new(0, 6)
-            sliderPadding.PaddingLeft = UDim.new(0, 2)
-            sliderPadding.PaddingRight = UDim.new(0, 6)
-            sliderPadding.PaddingTop = UDim.new(0, 6)
-
+            local sliderValue = Instance.new("TextLabel")
             sliderValue.Name = "sliderValue"
-            sliderValue.Parent = sliderLabel
-            sliderValue.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            sliderValue.BackgroundTransparency = 1.000
+            sliderValue.Parent = sliderFrame
+            sliderValue.BackgroundTransparency = 1
             sliderValue.AnchorPoint = Vector2.new(1, 0)
             sliderValue.Position = UDim2.new(1, -2, 0, 0)
-            sliderValue.Size = UDim2.new(0, 110, 0, 15)
+            sliderValue.Size = UDim2.new(0, math.min(132, math.floor(_w * 0.48)), 0, 22)
             sliderValue.Font = Enum.Font.GothamSemibold
-            sliderValue.Text = values.default
             sliderValue.TextColor3 = library.accentColor
-            sliderValue.TextSize = 12.000
+            sliderValue.TextSize = 12
             sliderValue.TextXAlignment = Enum.TextXAlignment.Right
+            sliderValue.TextYAlignment = Enum.TextYAlignment.Center
 
+            local hit = Instance.new("TextButton")
+            hit.Name = "sliderHitTarget"
+            hit.Parent = sliderFrame
+            hit.BackgroundTransparency = 1
+            hit.Position = UDim2.new(0, 0, 0, 26)
+            hit.Size = UDim2.new(1, 0, 0, 24)
+            hit.AutoButtonColor = false
+            hit.Text = ""
+            hit.ZIndex = 5
 
-            local calc1 = values.max - values.min
-            local calc2 = values.default - values.min
-            local calc3 = calc2 / calc1
-            local calc4 = calc3 * sliderBackground.AbsoluteSize.X
-            local Calculation = calc4
-            sliderIndicator.Size = UDim2.new(0, Calculation, 0, 4)
-            sliderThumb.Position = UDim2.new(0, math.clamp(Calculation + 1, 1, math.max(sliderBackground.AbsoluteSize.X, 1)), 0.5, 0)
-            sliderValue.Text = values.default
+            local rail = Instance.new("Frame")
+            rail.Name = "sliderBackground"
+            rail.Parent = hit
+            rail.AnchorPoint = Vector2.new(0, 0.5)
+            rail.BackgroundColor3 = Color3.fromRGB(31, 32, 42)
+            rail.BorderSizePixel = 0
+            rail.Position = UDim2.new(0, 3, 0.5, 0)
+            rail.Size = UDim2.new(1, -6, 0, 4)
+            rail.ClipsDescendants = false
+            rail.ZIndex = 5
 
-            CreateTween("slider_drag", 0.008)
+            local railCorner = Instance.new("UICorner")
+            railCorner.CornerRadius = UDim.new(1, 0)
+            railCorner.Parent = rail
 
-            local ValueNum = values.default
-            local slideText = compare and ValueNum .. compareSign .. tostring(values.max - 1) .. suffix or ValueNum .. suffix
-            sliderValue.Text = slideText
+            local railStroke = Instance.new("UIStroke")
+            railStroke.Name = "sliderRailStroke"
+            railStroke.Parent = rail
+            railStroke.Color = library.strokeColor
+            railStroke.Transparency = 0.65
+            railStroke.Thickness = 1
 
-            local sliding = false
-            local function updateSliderFromX(posX)
-                local rel = math.clamp((posX - sliderBackground.AbsolutePosition.X) / math.max(sliderBackground.AbsoluteSize.X, 1), 0, 1)
-                local raw = rel * (tonumber(values.max) - tonumber(values.min)) + tonumber(values.min)
-                if _step then
-                    ValueNum = math.clamp(math.floor(raw / _step + 0.5) * _step, values.min, values.max)
-                    local dec = tostring(_step):match("%.(%d+)")
-                    if dec then ValueNum = tonumber(string.format("%." .. #dec .. "f", ValueNum)) end
+            local railGradient = Instance.new("UIGradient")
+            railGradient.Name = "sliderBackgroundGradient"
+            railGradient.Parent = rail
+            railGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 41, 52)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(27, 28, 37))
+            }
+            railGradient.Rotation = 90
+
+            local fill = Instance.new("Frame")
+            fill.Name = "sliderIndicator"
+            fill.Parent = rail
+            fill.BackgroundColor3 = library.accentColor
+            fill.BorderSizePixel = 0
+            fill.Position = UDim2.new(0, 0, 0, 0)
+            fill.Size = UDim2.new(0, 0, 1, 0)
+            fill.ZIndex = 6
+
+            local fillCorner = Instance.new("UICorner")
+            fillCorner.CornerRadius = UDim.new(1, 0)
+            fillCorner.Parent = fill
+
+            local fillGradient = Instance.new("UIGradient")
+            fillGradient.Name = "sliderIndicatorGradient"
+            fillGradient.Parent = fill
+            fillGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, library.accentColor),
+                ColorSequenceKeypoint.new(1, library.gradientEnabled and library.accentColorBottom or library.accentColor)
+            }
+
+            local fillStroke = Instance.new("UIStroke")
+            fillStroke.Name = "sliderIndicatorGlow"
+            fillStroke.Parent = fill
+            fillStroke.Color = library.accentColor
+            fillStroke.Transparency = 0.62
+            fillStroke.Thickness = 1.5
+
+            local thumb = Instance.new("Frame")
+            thumb.Name = "sliderThumb"
+            thumb.Parent = hit
+            thumb.AnchorPoint = Vector2.new(0.5, 0.5)
+            thumb.BackgroundColor3 = Color3.fromRGB(242, 237, 255)
+            thumb.BorderSizePixel = 0
+            thumb.Position = UDim2.new(0, 8, 0.5, 0)
+            thumb.Size = UDim2.new(0, 12, 0, 12)
+            thumb.ZIndex = 9
+
+            local thumbCorner = Instance.new("UICorner")
+            thumbCorner.CornerRadius = UDim.new(1, 0)
+            thumbCorner.Parent = thumb
+
+            local thumbStroke = Instance.new("UIStroke")
+            thumbStroke.Name = "sliderThumbStroke"
+            thumbStroke.Parent = thumb
+            thumbStroke.Color = library.accentColor
+            thumbStroke.Transparency = 0.12
+            thumbStroke.Thickness = 1.5
+
+            local thumbGlow = library:AddSoftGlow(thumb, 0.76, 10, library.accentColor, 4)
+
+            local function decimalsForStep()
+                if not step then return nil end
+                local s = tostring(step)
+                local dec = s:match("%.(%d+)")
+                return dec and #dec or nil
+            end
+            local stepDecimals = decimalsForStep()
+
+            local function quantize(v)
+                v = math.clamp(v, minValue, maxValue)
+                if step and step > 0 then
+                    v = minValue + math.floor(((v - minValue) / step) + 0.5) * step
+                    v = math.clamp(v, minValue, maxValue)
+                    if stepDecimals then
+                        v = tonumber(string.format("%." .. stepDecimals .. "f", v))
+                    end
                 else
-                    ValueNum = math.floor(raw)
+                    v = math.floor(v + 0.5)
                 end
-                local sliderX = rel * sliderBackground.AbsoluteSize.X
-                TweenService:Create(sliderIndicator, TweenTable["slider_drag"], {Size = UDim2.new(0, sliderX, 0, 4)}):Play()
-                TweenService:Create(sliderThumb, TweenTable["slider_drag"], {
-                    Position = UDim2.new(0, math.clamp(sliderX + 1, 1, math.max(sliderBackground.AbsoluteSize.X, 1)), 0.5, 0)
-                }):Play()
-                local maxDisplay = _step and values.max or (values.max - 1)
-                slideText = compare and ValueNum .. compareSign .. tostring(maxDisplay) .. suffix or ValueNum .. suffix
-                sliderValue.Text = slideText
-                pcall(function() callback(ValueNum) end)
+                return v
             end
 
-            sliderButton.InputBegan:Connect(function(inp)
+            local function displayValue(v)
+                if compare then
+                    return tostring(v) .. compareSign .. tostring(maxValue) .. suffix
+                end
+                return tostring(v) .. suffix
+            end
+
+            local THUMB_RADIUS = 6
+            local function railGeometry()
+                local railWidth = rail.AbsoluteSize.X
+                if railWidth <= 1 then railWidth = math.max(_w - 6, 1) end
+                local leftX = rail.Position.X.Offset + THUMB_RADIUS
+                local usable = math.max(railWidth - (THUMB_RADIUS * 2), 1)
+                return railWidth, leftX, usable
+            end
+
+            local function ratioForValue(v)
+                local span = maxValue - minValue
+                if span <= 0 then return 0 end
+                return math.clamp((v - minValue) / span, 0, 1)
+            end
+
+            local function render(animated)
+                local ratio = ratioForValue(ValueNum)
+                local railWidth, leftX, usable = railGeometry()
+                local thumbX = leftX + ratio * usable
+                -- Fill ends at thumb center, while thumb itself is clamped inside
+                -- the rail endpoints by THUMB_RADIUS on both sides.
+                local fillWidth = math.clamp(thumbX - rail.Position.X.Offset, 0, railWidth)
+                local targetFill = UDim2.new(0, fillWidth, 1, 0)
+                local targetThumb = UDim2.new(0, thumbX, 0.5, 0)
+                sliderValue.Text = displayValue(ValueNum)
+
+                if animated then
+                    TweenService:Create(fill, TweenInfo.new(0.055, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = targetFill}):Play()
+                    TweenService:Create(thumb, TweenInfo.new(0.055, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = targetThumb}):Play()
+                else
+                    fill.Size = targetFill
+                    thumb.Position = targetThumb
+                end
+            end
+
+            local sliding = false
+            local function setFromScreenX(screenX, fireCallback)
+                local railWidth = rail.AbsoluteSize.X
+                if railWidth <= 1 then return end
+                local localX = screenX - rail.AbsolutePosition.X
+                local usable = math.max(railWidth - (THUMB_RADIUS * 2), 1)
+                local ratio = math.clamp((localX - THUMB_RADIUS) / usable, 0, 1)
+                local newValue = minValue + ratio * (maxValue - minValue)
+                ValueNum = quantize(newValue)
+                render(false)
+                if fireCallback then
+                    pcall(function() callback(ValueNum) end)
+                end
+            end
+
+            hit.InputBegan:Connect(function(inp)
                 if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
                     sliding = true
-                    TweenService:Create(sliderThumb, TweenTable["hover"], {Size = UDim2.new(0, 13, 0, 13)}):Play()
-                    if sliderThumbGlow then TweenService:Create(sliderThumbGlow, TweenTable["hover"], {ImageTransparency = 0.58}):Play() end
-                    updateSliderFromX(inp.Position.X)
+                    TweenService:Create(thumb, TweenTable["hover"], {Size = UDim2.new(0, 14, 0, 14)}):Play()
+                    TweenService:Create(railStroke, TweenTable["hover"], {Color = library.accentSoft, Transparency = 0.42}):Play()
+                    if thumbGlow then TweenService:Create(thumbGlow, TweenTable["hover"], {ImageTransparency = 0.60}):Play() end
+                    setFromScreenX(inp.Position.X, true)
                 end
             end)
 
-            sliderButton.MouseEnter:Connect(function()
+            hit.MouseEnter:Connect(function()
                 TweenService:Create(sliderLabel, TweenTable["hover"], {TextColor3 = library.textPrimary}):Play()
-                if sliderThumbGlow then TweenService:Create(sliderThumbGlow, TweenTable["hover"], {ImageTransparency = 0.64}):Play() end
+                TweenService:Create(railStroke, TweenTable["hover"], {Color = library.accentSoft, Transparency = 0.48}):Play()
             end)
-            sliderButton.MouseLeave:Connect(function()
+
+            hit.MouseLeave:Connect(function()
                 TweenService:Create(sliderLabel, TweenTable["hover"], {TextColor3 = library.textSecondary}):Play()
-                if not sliding and sliderThumbGlow then
-                    TweenService:Create(sliderThumbGlow, TweenTable["hover"], {ImageTransparency = 0.72}):Play()
+                if not sliding then
+                    TweenService:Create(railStroke, TweenTable["hover"], {Color = library.strokeColor, Transparency = 0.65}):Play()
                 end
             end)
 
             table.insert(library._connections, UserInputService.InputChanged:Connect(function(inp)
                 if sliding and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
-                    updateSliderFromX(inp.Position.X)
+                    setFromScreenX(inp.Position.X, true)
                 end
             end))
 
             table.insert(library._connections, UserInputService.InputEnded:Connect(function(inp)
                 if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                    sliding = false
-                    TweenService:Create(sliderThumb, TweenTable["hover"], {Size = UDim2.new(0, 11, 0, 11)}):Play()
-                    if sliderThumbGlow then TweenService:Create(sliderThumbGlow, TweenTable["hover"], {ImageTransparency = 0.72}):Play() end
+                    if sliding then
+                        sliding = false
+                        TweenService:Create(thumb, TweenTable["hover"], {Size = UDim2.new(0, 12, 0, 12)}):Play()
+                        TweenService:Create(railStroke, TweenTable["hover"], {Color = library.strokeColor, Transparency = 0.65}):Play()
+                        if thumbGlow then TweenService:Create(thumbGlow, TweenTable["hover"], {ImageTransparency = 0.76}):Play() end
+                    end
                 end
             end))
+
+            rail:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+                if rail.AbsoluteSize.X > 1 then render(false) end
+            end)
+            task.defer(function() render(false) end)
 
             UpdatePageSize()
 
             local SliderFunctions = {}
             function SliderFunctions:Value(new)
-                local ncalc1 = new - values.min
-                local ncalc2 = ncalc1 / calc1
-                local ncalc3 = ncalc2 * sliderBackground.AbsoluteSize.X
-                local nCalculation = ncalc3
-                sliderIndicator.Size = UDim2.new(0, nCalculation, 0, 4)
-                sliderThumb.Position = UDim2.new(0, math.clamp(nCalculation + 1, 1, math.max(sliderBackground.AbsoluteSize.X, 1)), 0.5, 0)
-                slideText = compare and new .. compareSign .. tostring(values.max - 1) .. suffix or new .. suffix
-                sliderValue.Text = slideText
+                local n = tonumber(new)
+                if n ~= nil then
+                    ValueNum = quantize(n)
+                    render(false)
+                end
                 return SliderFunctions
             end
-            --
             function SliderFunctions:Max(new)
-                new = new or values.max
-                values.max = new + 1
-                slideText = compare and ValueNum .. compareSign .. tostring(values.max - 1) .. suffix or ValueNum .. suffix
+                local n = tonumber(new)
+                if n ~= nil then
+                    maxValue = n
+                    if maxValue < minValue then maxValue = minValue end
+                    ValueNum = math.clamp(ValueNum, minValue, maxValue)
+                    render(false)
+                end
                 return SliderFunctions
             end
-            --
             function SliderFunctions:Min(new)
-                new = new or values.min
-                values.min = new
-                slideText = compare and new .. compareSign .. tostring(values.max - 1) .. suffix or ValueNum .. suffix
+                local n = tonumber(new)
+                if n ~= nil then
+                    minValue = n
+                    if minValue > maxValue then minValue = maxValue end
+                    ValueNum = math.clamp(ValueNum, minValue, maxValue)
+                    render(false)
+                end
                 return SliderFunctions
             end
-            --
             function SliderFunctions:SetFunction(new)
-                new = new or callback
-                callback = new
+                callback = new or callback
                 return SliderFunctions
             end
-            --
             function SliderFunctions:Text(new)
-                new = new or sliderLabel.Text
-                sliderLabel.Text = new
+                sliderLabel.Text = new or sliderLabel.Text
                 return SliderFunctions
             end
-            --
             function SliderFunctions:Hide()
                 sliderFrame.Visible = false
+                UpdatePageSize()
                 return SliderFunctions
             end
-            --
             function SliderFunctions:Show()
                 sliderFrame.Visible = true
+                UpdatePageSize()
                 return SliderFunctions
             end
-            --
             function SliderFunctions:Remove()
                 sliderFrame:Destroy()
+                UpdatePageSize()
                 return SliderFunctions
             end
             function SliderFunctions:Flag(name)
-                library:RegisterFlag(name, function() return ValueNum end, function(v) SliderFunctions:Value(v); pcall(function() callback(v) end) end, "slider")
+                if not name then return SliderFunctions end
+                library._flags[name] = SliderFunctions
                 return SliderFunctions
             end
             return SliderFunctions
         end
-        --
+
         function Components:NewColorPicker(text, default, callback)
             local page = self._page
             local _w = self._width
@@ -5727,7 +5739,7 @@ function library:Init(key)
             gbContentLayout.Parent = gbContent
             gbContentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
             gbContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            gbContentLayout.Padding = UDim.new(0, 6)
+            gbContentLayout.Padding = UDim.new(0, 8)
 
             local gbPadding = Instance.new("UIPadding")
             gbPadding.Parent = gbContent
