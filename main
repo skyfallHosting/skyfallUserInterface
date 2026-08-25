@@ -1,3 +1,4 @@
+-- Skyfall UI v2.3.0 — neat/wide ambient pass
 -- / Locals
 local Workspace = game:GetService("Workspace")
 local Player = game:GetService("Players").LocalPlayer
@@ -80,7 +81,7 @@ local drag = function(obj, latency)
 end
 
 library = {
-    version = "2.2.0",
+    version = "2.3.0",
     title = title or "Skyfall Hub",
     fps = 0,
     rank = "private",
@@ -1347,13 +1348,13 @@ function library:Init(key)
     edge.AnchorPoint = Vector2.new(0.5, 0.5)
     edge.BackgroundColor3 = Color3.fromRGB(30, 24, 44)
     edge.Position = UDim2.new(0.5, 0, 0.5, 0)
-    edge.Size = UDim2.new(0, 760, 0, 500)
+    edge.Size = UDim2.new(0, 840, 0, 540)
     edge.BorderSizePixel = 0
     edge.ClipsDescendants = false
     edge.ZIndex = 2
 
     -- Window halo: one blurred texture + two extremely soft strokes.
-    local windowGlow = library:AddSoftGlow(edge, 0.76, 28, library.accentColor, 0)
+    local windowGlow = library:AddSoftGlow(edge, 0.72, 34, library.accentColor, 0)
     local windowStroke = Instance.new("UIStroke")
     windowStroke.Name = "windowAccentStroke"
     windowStroke.Parent = edge
@@ -1365,13 +1366,18 @@ function library:Init(key)
     windowGlowStroke.Name = "windowGlowStroke"
     windowGlowStroke.Parent = edge
     windowGlowStroke.Color = library.accentColor
-    windowGlowStroke.Transparency = 0.90
+    windowGlowStroke.Transparency = 0.87
     windowGlowStroke.Thickness = 4
 
     drag(edge, 0.04)
 
     local menuScale = Instance.new("UIScale")
-    menuScale.Scale = 1
+    local baseMenuScale = 1
+    if not isMobile and workspace.CurrentCamera then
+        local viewport = workspace.CurrentCamera.ViewportSize
+        baseMenuScale = math.min(1, math.max(0.72, math.min((viewport.X - 22) / 840, (viewport.Y - 22) / 540)))
+    end
+    menuScale.Scale = baseMenuScale
     menuScale.Parent = edge
 
     local menuVisible = true
@@ -1386,7 +1392,7 @@ function library:Init(key)
             if library._closeActivePopup then
                 library._closeActivePopup()
             end
-            local tw = TweenService:Create(menuScale, TweenTable["menu_hide"], {Scale = 0.92})
+            local tw = TweenService:Create(menuScale, TweenTable["menu_hide"], {Scale = baseMenuScale * 0.92})
             tw:Play()
             tw.Completed:Connect(function()
                 edge.Visible = false
@@ -1394,9 +1400,9 @@ function library:Init(key)
                 menuAnimating = false
             end)
         else
-            menuScale.Scale = 0.92
+            menuScale.Scale = baseMenuScale * 0.92
             edge.Visible = true
-            local tw = TweenService:Create(menuScale, TweenTable["menu_show"], {Scale = 1})
+            local tw = TweenService:Create(menuScale, TweenTable["menu_show"], {Scale = baseMenuScale})
             tw:Play()
             tw.Completed:Connect(function()
                 menuVisible = true
@@ -1478,7 +1484,7 @@ function library:Init(key)
     background.AnchorPoint = Vector2.new(0.5, 0.5)
     background.BackgroundColor3 = library.bgColor
     background.Position = UDim2.new(0.5, 0, 0.5, 0)
-    background.Size = UDim2.new(0, 758, 0, 498)
+    background.Size = UDim2.new(0, 838, 0, 538)
     background.ClipsDescendants = true
     background.BorderSizePixel = 0
     background.ZIndex = 2
@@ -1499,7 +1505,7 @@ function library:Init(key)
         ColorSequenceKeypoint.new(0.48, Color3.fromRGB(10, 11, 17)),
         ColorSequenceKeypoint.new(1.00, Color3.fromRGB(8, 9, 14))
     }
-    backgroundGradient.Rotation = 105
+    backgroundGradient.Rotation = 112
     backgroundGradient.Name = "backgroundGradient"
     backgroundGradient.Parent = background
 
@@ -1511,10 +1517,10 @@ function library:Init(key)
         ambientTop.BackgroundTransparency = 1
         ambientTop.Image = library.glowAsset
         ambientTop.ImageColor3 = library.accentColor
-        ambientTop.ImageTransparency = 0.88
+        ambientTop.ImageTransparency = 0.845
         ambientTop.ScaleType = Enum.ScaleType.Stretch
-        ambientTop.Position = UDim2.new(0.33, 0, 0, -150)
-        ambientTop.Size = UDim2.new(0, 500, 0, 360)
+        ambientTop.Position = UDim2.new(0.28, 0, 0, -170)
+        ambientTop.Size = UDim2.new(0, 590, 0, 410)
         ambientTop.ZIndex = 3
         ambientTop.Active = false
 
@@ -1524,23 +1530,23 @@ function library:Init(key)
         ambientSide.BackgroundTransparency = 1
         ambientSide.Image = library.glowAsset
         ambientSide.ImageColor3 = Color3.fromRGB(86, 61, 148)
-        ambientSide.ImageTransparency = 0.925
+        ambientSide.ImageTransparency = 0.895
         ambientSide.ScaleType = Enum.ScaleType.Stretch
-        ambientSide.Position = UDim2.new(1, -260, 1, -170)
-        ambientSide.Size = UDim2.new(0, 360, 0, 280)
+        ambientSide.Position = UDim2.new(1, -315, 1, -210)
+        ambientSide.Size = UDim2.new(0, 430, 0, 330)
         ambientSide.ZIndex = 3
         ambientSide.Active = false
     end
-    library:AddNoise(background, 0.973)
+    library:AddNoise(background, 0.982)
 
     headerLabel.Name = "headerLabel"
     headerLabel.Parent = background
     headerLabel.BackgroundTransparency = 1
-    headerLabel.Size = UDim2.new(0, 250, 0, 62)
+    headerLabel.Size = UDim2.new(0, 285, 0, 66)
     headerLabel.Font = Enum.Font.GothamBold
     headerLabel.Text = "S K Y F A L L"
     headerLabel.TextColor3 = library.textPrimary
-    headerLabel.TextSize = 15
+    headerLabel.TextSize = 14
     headerLabel.TextXAlignment = Enum.TextXAlignment.Left
     headerLabel.RichText = true
     headerLabel.ZIndex = 5
@@ -1576,12 +1582,12 @@ function library:Init(key)
     headerProduct.Name = "headerProduct"
     headerProduct.Parent = background
     headerProduct.BackgroundTransparency = 1
-    headerProduct.Position = UDim2.new(0, 188, 0, 0)
-    headerProduct.Size = UDim2.new(0, 350, 0, 62)
+    headerProduct.Position = UDim2.new(0, 214, 0, 0)
+    headerProduct.Size = UDim2.new(0, 390, 0, 66)
     headerProduct.Font = Enum.Font.Gotham
     headerProduct.Text = productTitle
     headerProduct.TextColor3 = library.textMuted
-    headerProduct.TextSize = 11
+    headerProduct.TextSize = 10
     headerProduct.TextXAlignment = Enum.TextXAlignment.Left
     headerProduct.ZIndex = 5
 
@@ -1590,7 +1596,7 @@ function library:Init(key)
     headerVersion.Parent = background
     headerVersion.BackgroundTransparency = 1
     headerVersion.Position = UDim2.new(1, -120, 0, 0)
-    headerVersion.Size = UDim2.new(0, 96, 0, 62)
+    headerVersion.Size = UDim2.new(0, 96, 0, 66)
     headerVersion.Font = Enum.Font.GothamMedium
     headerVersion.Text = "v" .. library.version
     headerVersion.TextColor3 = library.textFaint
@@ -1605,7 +1611,7 @@ function library:Init(key)
     bar.Parent = barFolder
     bar.BackgroundColor3 = library.accentColor
     bar.BackgroundTransparency = 0.52
-    bar.Size = UDim2.new(0, 758, 0, 1)
+    bar.Size = UDim2.new(0, 838, 0, 1)
     bar.BorderSizePixel = 0
     bar.ZIndex = 6
 
@@ -1652,13 +1658,13 @@ function library:Init(key)
     tabButtonsEdge.Parent = background
     tabButtonsEdge.AnchorPoint = Vector2.new(0.5, 0.5)
     tabButtonsEdge.BackgroundColor3 = Color3.fromRGB(27, 27, 38)
-    tabButtonsEdge.Position = UDim2.new(0, 104, 0, 278)
-    tabButtonsEdge.Size = UDim2.new(0, 184, 0, 414)
+    tabButtonsEdge.Position = UDim2.new(0, 108, 0, 308)
+    tabButtonsEdge.Size = UDim2.new(0, 190, 0, 454)
     tabButtonsEdge.BorderSizePixel = 0
     tabButtonsEdge.ClipsDescendants = false
     tabButtonsEdge.ZIndex = 3
 
-    local sidebarGlow = library:AddSoftGlow(tabButtonsEdge, 0.93, 13, Color3.fromRGB(103, 74, 177), 1)
+    local sidebarGlow = library:AddSoftGlow(tabButtonsEdge, 0.905, 18, Color3.fromRGB(103, 74, 177), 1)
 
     tabButtonCorner.CornerRadius = UDim.new(0, 12)
     tabButtonCorner.Name = "tabButtonCorner"
@@ -1669,8 +1675,8 @@ function library:Init(key)
     tabButtons.AnchorPoint = Vector2.new(0.5, 0.5)
     tabButtons.BackgroundColor3 = library.sidebarColor
     tabButtons.ClipsDescendants = true
-    tabButtons.Position = UDim2.new(0.5, 0, 0, 171)
-    tabButtons.Size = UDim2.new(0, 182, 0, 328)
+    tabButtons.Position = UDim2.new(0.5, 0, 0, 176)
+    tabButtons.Size = UDim2.new(0, 188, 0, 340)
     tabButtons.BorderSizePixel = 0
     tabButtons.ZIndex = 4
 
@@ -1687,7 +1693,7 @@ function library:Init(key)
     tabButtonLayout.Parent = tabButtons
     tabButtonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     tabButtonLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    tabButtonLayout.Padding = UDim.new(0, 6)
+    tabButtonLayout.Padding = UDim.new(0, 7)
 
     tabButtonPadding.Name = "tabButtonPadding"
     tabButtonPadding.Parent = tabButtons
@@ -1700,7 +1706,7 @@ function library:Init(key)
     navKicker.Name = "navKicker"
     navKicker.Parent = tabButtons
     navKicker.BackgroundTransparency = 1
-    navKicker.Size = UDim2.new(0, 162, 0, 18)
+    navKicker.Size = UDim2.new(0, 168, 0, 19)
     navKicker.Font = Enum.Font.GothamSemibold
     navKicker.Text = "NAVIGATION"
     navKicker.TextColor3 = library.textFaint
@@ -1718,8 +1724,8 @@ function library:Init(key)
     statusCard.Parent = tabButtonsEdge
     statusCard.BackgroundColor3 = Color3.fromRGB(18, 19, 27)
     statusCard.BorderSizePixel = 0
-    statusCard.Position = UDim2.new(0, 10, 1, -64)
-    statusCard.Size = UDim2.new(1, -20, 0, 52)
+    statusCard.Position = UDim2.new(0, 10, 1, -70)
+    statusCard.Size = UDim2.new(1, -20, 0, 58)
     statusCard.ZIndex = 3
     local statusCorner = Instance.new("UICorner")
     statusCorner.CornerRadius = UDim.new(0, 9)
@@ -1730,14 +1736,14 @@ function library:Init(key)
     statusStroke.Thickness = 1
     statusStroke.Parent = statusCard
 
-    local statusGlow = library:AddSoftGlow(statusCard, 0.94, 9, Color3.fromRGB(107, 79, 177), 1)
+    local statusGlow = library:AddSoftGlow(statusCard, 0.915, 12, Color3.fromRGB(107, 79, 177), 1)
 
     local statusDot = Instance.new("Frame")
     statusDot.Name = "statusDot"
     statusDot.Parent = statusCard
     statusDot.BackgroundColor3 = library.accentColor
     statusDot.BorderSizePixel = 0
-    statusDot.Position = UDim2.new(0, 12, 0, 13)
+    statusDot.Position = UDim2.new(0, 13, 0, 15)
     statusDot.Size = UDim2.new(0, 7, 0, 7)
     statusDot.ZIndex = 4
     local statusDotCorner = Instance.new("UICorner")
@@ -1754,7 +1760,7 @@ function library:Init(key)
     statusText.Name = "statusText"
     statusText.Parent = statusCard
     statusText.BackgroundTransparency = 1
-    statusText.Position = UDim2.new(0, 28, 0, 7)
+    statusText.Position = UDim2.new(0, 30, 0, 9)
     statusText.Size = UDim2.new(1, -38, 0, 18)
     statusText.Font = Enum.Font.GothamMedium
     statusText.Text = "Ready"
@@ -1767,7 +1773,7 @@ function library:Init(key)
     statusVersion.Name = "statusVersion"
     statusVersion.Parent = statusCard
     statusVersion.BackgroundTransparency = 1
-    statusVersion.Position = UDim2.new(0, 12, 0, 27)
+    statusVersion.Position = UDim2.new(0, 13, 0, 31)
     statusVersion.Size = UDim2.new(1, -24, 0, 16)
     statusVersion.Font = Enum.Font.Gotham
     statusVersion.Text = "Skyfall Hub  •  v" .. library.version
@@ -1780,13 +1786,27 @@ function library:Init(key)
     containerEdge.Parent = background
     containerEdge.AnchorPoint = Vector2.new(0.5, 0.5)
     containerEdge.BackgroundColor3 = Color3.fromRGB(28, 28, 40)
-    containerEdge.Position = UDim2.new(0, 478, 0, 278)
-    containerEdge.Size = UDim2.new(0, 548, 0, 414)
+    containerEdge.Position = UDim2.new(0, 522, 0, 308)
+    containerEdge.Size = UDim2.new(0, 618, 0, 454)
     containerEdge.BorderSizePixel = 0
     containerEdge.ClipsDescendants = false
     containerEdge.ZIndex = 3
 
-    local contentGlow = library:AddSoftGlow(containerEdge, 0.945, 14, Color3.fromRGB(94, 66, 157), 1)
+    local contentGlow = library:AddSoftGlow(containerEdge, 0.915, 20, Color3.fromRGB(94, 66, 157), 1)
+    if library.glowAsset then
+        local contentAmbient = Instance.new("ImageLabel")
+        contentAmbient.Name = "contentAmbient"
+        contentAmbient.Parent = background
+        contentAmbient.BackgroundTransparency = 1
+        contentAmbient.Image = library.glowAsset
+        contentAmbient.ImageColor3 = Color3.fromRGB(116, 82, 194)
+        contentAmbient.ImageTransparency = 0.94
+        contentAmbient.ScaleType = Enum.ScaleType.Stretch
+        contentAmbient.Position = UDim2.new(0, 180, 0, 92)
+        contentAmbient.Size = UDim2.new(0, 690, 0, 430)
+        contentAmbient.ZIndex = 3
+        contentAmbient.Active = false
+    end
 
     tabButtonCorner_3.CornerRadius = UDim.new(0, 12)
     tabButtonCorner_3.Name = "tabButtonCorner"
@@ -1797,7 +1817,7 @@ function library:Init(key)
     container.AnchorPoint = Vector2.new(0.5, 0.5)
     container.BackgroundColor3 = Color3.fromRGB(13, 14, 20)
     container.Position = UDim2.new(0.5, 0, 0.5, 0)
-    container.Size = UDim2.new(0, 546, 0, 412)
+    container.Size = UDim2.new(0, 616, 0, 452)
     container.BorderSizePixel = 0
     container.ZIndex = 4
 
@@ -1819,19 +1839,19 @@ function library:Init(key)
     contentHeader.Name = "contentHeader"
     contentHeader.Parent = container
     contentHeader.BackgroundTransparency = 1
-    contentHeader.Size = UDim2.new(1, 0, 0, 58)
+    contentHeader.Size = UDim2.new(1, 0, 0, 62)
     contentHeader.ZIndex = 6
 
     local contentKicker = Instance.new("TextLabel")
     contentKicker.Name = "contentKicker"
     contentKicker.Parent = contentHeader
     contentKicker.BackgroundTransparency = 1
-    contentKicker.Position = UDim2.new(0, 16, 0, 8)
-    contentKicker.Size = UDim2.new(1, -120, 0, 23)
+    contentKicker.Position = UDim2.new(0, 18, 0, 9)
+    contentKicker.Size = UDim2.new(1, -138, 0, 24)
     contentKicker.Font = Enum.Font.GothamSemibold
     contentKicker.Text = productTitle
     contentKicker.TextColor3 = library.textPrimary
-    contentKicker.TextSize = 17
+    contentKicker.TextSize = 18
     contentKicker.TextXAlignment = Enum.TextXAlignment.Left
     contentKicker.TextTruncate = Enum.TextTruncate.AtEnd
     contentKicker.ZIndex = 7
@@ -1840,8 +1860,8 @@ function library:Init(key)
     contentSubtitle.Name = "contentSubtitle"
     contentSubtitle.Parent = contentHeader
     contentSubtitle.BackgroundTransparency = 1
-    contentSubtitle.Position = UDim2.new(0, 16, 0, 31)
-    contentSubtitle.Size = UDim2.new(1, -120, 0, 17)
+    contentSubtitle.Position = UDim2.new(0, 18, 0, 34)
+    contentSubtitle.Size = UDim2.new(1, -138, 0, 17)
     contentSubtitle.Font = Enum.Font.Gotham
     contentSubtitle.Text = "Skyfall controls"
     contentSubtitle.TextColor3 = library.textMuted
@@ -1854,8 +1874,8 @@ function library:Init(key)
     contentTabPill.Parent = contentHeader
     contentTabPill.BackgroundColor3 = Color3.fromRGB(29, 24, 43)
     contentTabPill.BackgroundTransparency = 0.10
-    contentTabPill.Position = UDim2.new(1, -86, 0, 15)
-    contentTabPill.Size = UDim2.new(0, 70, 0, 25)
+    contentTabPill.Position = UDim2.new(1, -92, 0, 18)
+    contentTabPill.Size = UDim2.new(0, 74, 0, 24)
     contentTabPill.Font = Enum.Font.GothamSemibold
     contentTabPill.Text = "PLAY"
     contentTabPill.TextColor3 = library.accentColor
@@ -1877,8 +1897,8 @@ function library:Init(key)
     headerDivider.BackgroundColor3 = library.strokeColor
     headerDivider.BackgroundTransparency = 0.56
     headerDivider.BorderSizePixel = 0
-    headerDivider.Position = UDim2.new(0, 14, 0, 57)
-    headerDivider.Size = UDim2.new(1, -28, 0, 1)
+    headerDivider.Position = UDim2.new(0, 16, 0, 61)
+    headerDivider.Size = UDim2.new(1, -32, 0, 1)
     headerDivider.ZIndex = 6
 
     local function updateContentHeader(tabTitle)
@@ -1887,7 +1907,7 @@ function library:Init(key)
         local targetW = math.clamp(TextService:GetTextSize(contentTabPill.Text, 9, Enum.Font.GothamSemibold, Vector2.new(math.huge, 25)).X + 24, 54, 104)
         TweenService:Create(contentTabPill, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Size = UDim2.new(0, targetW, 0, 25),
-            Position = UDim2.new(1, -(targetW + 16), 0, 15)
+            Position = UDim2.new(1, -(targetW + 18), 0, 18)
         }):Play()
     end
 
@@ -1933,12 +1953,12 @@ function library:Init(key)
         tabButton.BackgroundColor3 = Color3.fromRGB(31, 25, 46)
         tabButton.BackgroundTransparency = 1
         tabButton.ClipsDescendants = false
-        tabButton.Size = UDim2.new(0, 162, 0, 36)
+        tabButton.Size = UDim2.new(0, 168, 0, 38)
         tabButton.AutoButtonColor = false
         tabButton.Font = Enum.Font.GothamMedium
-        tabButton.Text = title
+        tabButton.Text = "      " .. title
         tabButton.TextColor3 = library.textMuted
-        tabButton.TextSize = 13
+        tabButton.TextSize = 12
         tabButton.TextXAlignment = Enum.TextXAlignment.Left
         tabButton.RichText = true
         tabButton.ZIndex = 6
@@ -1963,13 +1983,13 @@ function library:Init(key)
         }
         tabGradient.Rotation = 0
 
-        local tabGlow = library:AddSoftGlow(tabButton, 1, 10, library.accentColor, 4)
+        local tabGlow = library:AddSoftGlow(tabButton, 1, 13, library.accentColor, 4)
 
         local tabIcon = Instance.new("ImageLabel")
         tabIcon.Name = "tabLucideIcon"
         tabIcon.Parent = tabButton
         tabIcon.BackgroundTransparency = 1
-        tabIcon.Position = UDim2.new(0, 13, 0.5, -8)
+        tabIcon.Position = UDim2.new(0, 14, 0.5, -8)
         tabIcon.Size = UDim2.new(0, 16, 0, 16)
         tabIcon.ImageColor3 = library.textMuted
         tabIcon.ImageTransparency = 0.12
@@ -1978,9 +1998,8 @@ function library:Init(key)
         local tabIconAsset = nil
         tabIcon.Visible = false
 
-        local tabPad = Instance.new("UIPadding")
-        tabPad.PaddingLeft = UDim.new(0, 16)
-        tabPad.Parent = tabButton
+        -- Text is indented directly so child icons keep their true left position.
+        local tabPad = nil
 
         task.spawn(function()
             local asset = library:LoadLucideIcon(library:LucideForTab(title))
@@ -1988,7 +2007,7 @@ function library:Init(key)
                 tabIconAsset = asset
                 tabIcon.Image = asset
                 tabIcon.Visible = true
-                tabPad.PaddingLeft = UDim.new(0, 39)
+                -- no parent UIPadding here; it used to shift the icon into the label
                 if TabLibrary.CurrentTab == title then
                     tabIcon.ImageColor3 = library.accentColor
                     tabIcon.ImageTransparency = 0
@@ -2004,8 +2023,8 @@ function library:Init(key)
         page.Active = true
         page.BackgroundTransparency = 1
         page.BorderSizePixel = 0
-        page.Position = UDim2.new(0, 0, 0, 58)
-        page.Size = UDim2.new(0, 546, 0, 354)
+        page.Position = UDim2.new(0, 0, 0, 62)
+        page.Size = UDim2.new(0, 616, 0, 390)
         page.BottomImage = "http://www.roblox.com/asset/?id=3062506202"
         page.MidImage = "http://www.roblox.com/asset/?id=3062506202"
         page.ScrollBarThickness = 1
@@ -2019,21 +2038,21 @@ function library:Init(key)
         pageLayout.Parent = page
         pageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
         pageLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        pageLayout.Padding = UDim.new(0, 10)
+        pageLayout.Padding = UDim.new(0, 12)
 
         pagePadding.Name = "pagePadding"
         pagePadding.Parent = page
-        pagePadding.PaddingBottom = UDim.new(0, 14)
-        pagePadding.PaddingLeft = UDim.new(0, 14)
-        pagePadding.PaddingRight = UDim.new(0, 14)
-        pagePadding.PaddingTop = UDim.new(0, 14)
+        pagePadding.PaddingBottom = UDim.new(0, 16)
+        pagePadding.PaddingLeft = UDim.new(0, 16)
+        pagePadding.PaddingRight = UDim.new(0, 16)
+        pagePadding.PaddingTop = UDim.new(0, 16)
 
         if TabLibrary.IsFirst then
             page.Visible = true
             tabButton.TextColor3 = library.textPrimary
             tabButton.BackgroundTransparency = 0
             tabStroke.Transparency = 0.72
-            if tabGlow then tabGlow.ImageTransparency = 0.83 end
+            if tabGlow then tabGlow.ImageTransparency = 0.79 end
             if tabIcon.Visible then
                 tabIcon.ImageColor3 = library.accentColor
                 tabIcon.ImageTransparency = 0
@@ -2115,7 +2134,7 @@ function library:Init(key)
                 BackgroundTransparency = 0
             }):Play()
             TweenService:Create(tabStroke, TweenTable["tab_text_colour"], {Transparency = 0.72}):Play()
-            if tabGlow then TweenService:Create(tabGlow, TweenTable["tab_text_colour"], {ImageTransparency = 0.83}):Play() end
+            if tabGlow then TweenService:Create(tabGlow, TweenTable["tab_text_colour"], {ImageTransparency = 0.79}):Play() end
             if tabIcon.Visible then
                 TweenService:Create(tabIcon, TweenTable["tab_text_colour"], {
                     ImageColor3 = library.accentColor,
@@ -2138,7 +2157,7 @@ function library:Init(key)
         CreateTween("hover", 0.16)
         local Components = {}
         Components._page = page
-        Components._width = 518
+        Components._width = 584
         Components._updateSize = UpdatePageSize
         Components._screen = screen
         function Components:NewLabel(text, alignment)
@@ -2621,7 +2640,7 @@ function library:Init(key)
             toggleButton.BackgroundColor3 = library.surfaceHoverColor
             toggleButton.BackgroundTransparency = 1.000
             toggleButton.ClipsDescendants = false
-            toggleButton.Size = UDim2.new(0, _w, 0, 32)
+            toggleButton.Size = UDim2.new(0, _w, 0, 34)
             toggleButton.Font = Enum.Font.Gotham
             toggleButton.Text = ""
             toggleButton.TextColor3 = Color3.fromRGB(190, 190, 190)
@@ -2629,7 +2648,9 @@ function library:Init(key)
             toggleButton.TextXAlignment = Enum.TextXAlignment.Left
 
             toggleLayout.Name = "toggleLayout"
-            toggleLayout.Parent = toggleButton
+            -- Do not parent a UIListLayout here: it overrides toggleEdge.Position and
+            -- forces the switch to the left. Absolute positioning keeps switches right-aligned.
+            toggleLayout.Parent = nil
             toggleLayout.FillDirection = Enum.FillDirection.Horizontal
             toggleLayout.SortOrder = Enum.SortOrder.LayoutOrder
             toggleLayout.VerticalAlignment = Enum.VerticalAlignment.Center
@@ -2637,8 +2658,8 @@ function library:Init(key)
             toggleEdge.Name = "toggleEdge"
             toggleEdge.Parent = toggleButton
             toggleEdge.BackgroundColor3 = Color3.fromRGB(47, 49, 62)
-            toggleEdge.Position = UDim2.new(1, -38, 0.5, -10)
-            toggleEdge.Size = UDim2.new(0, 38, 0, 20)
+            toggleEdge.Position = UDim2.new(1, -42, 0.5, -10)
+            toggleEdge.Size = UDim2.new(0, 42, 0, 20)
             toggleEdge.BorderSizePixel = 0
 
             toggleEdgeCorner.CornerRadius = UDim.new(1, 0)
@@ -2703,7 +2724,7 @@ function library:Init(key)
             toggleLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             toggleLabel.BackgroundTransparency = 1.000
             toggleLabel.Position = UDim2.new(0, 0, 0, 0)
-            toggleLabel.Size = UDim2.new(1, -48, 1, 0)
+            toggleLabel.Size = UDim2.new(1, -54, 1, 0)
             toggleLabel.Font = Enum.Font.Gotham
             toggleLabel.LineHeight = 1.150
             toggleLabel.Text = text
@@ -4619,8 +4640,9 @@ function library:Init(key)
             sliderValue.Parent = sliderLabel
             sliderValue.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             sliderValue.BackgroundTransparency = 1.000
-            sliderValue.Position = UDim2.new(0.577319562, 0, 0, 0)
-            sliderValue.Size = UDim2.new(0, 169, 0, 15)
+            sliderValue.AnchorPoint = Vector2.new(1, 0)
+            sliderValue.Position = UDim2.new(1, -2, 0, 0)
+            sliderValue.Size = UDim2.new(0, 110, 0, 15)
             sliderValue.Font = Enum.Font.GothamSemibold
             sliderValue.Text = values.default
             sliderValue.TextColor3 = library.accentColor
@@ -5546,7 +5568,7 @@ function library:Init(key)
         local _leftColumn = nil
         local _rightColumn = nil
         local _baseW = Components._width
-        local _groupColWidth = math.floor((_baseW - 10) / 2)
+        local _groupColWidth = math.floor((_baseW - 12) / 2)
 
         local function _ensureGroupRow()
             if _groupRow then return end
@@ -5564,7 +5586,7 @@ function library:Init(key)
             rowLayout.FillDirection = Enum.FillDirection.Horizontal
             rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
             rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            rowLayout.Padding = UDim.new(0, 10)
+            rowLayout.Padding = UDim.new(0, 12)
 
             _leftColumn = Instance.new("Frame")
             _leftColumn.Name = "leftColumn"
@@ -5577,7 +5599,7 @@ function library:Init(key)
             local leftLayout = Instance.new("UIListLayout")
             leftLayout.Parent = _leftColumn
             leftLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            leftLayout.Padding = UDim.new(0, 10)
+            leftLayout.Padding = UDim.new(0, 12)
 
             _rightColumn = Instance.new("Frame")
             _rightColumn.Name = "rightColumn"
@@ -5590,7 +5612,7 @@ function library:Init(key)
             local rightLayout = Instance.new("UIListLayout")
             rightLayout.Parent = _rightColumn
             rightLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            rightLayout.Padding = UDim.new(0, 10)
+            rightLayout.Padding = UDim.new(0, 12)
 
             UpdatePageSize()
         end
@@ -5608,7 +5630,7 @@ function library:Init(key)
             gbFrame.BorderSizePixel = 0
 
             local gbCorner = Instance.new("UICorner")
-            gbCorner.CornerRadius = UDim.new(0, 11)
+            gbCorner.CornerRadius = UDim.new(0, 12)
             gbCorner.Parent = gbFrame
 
             local gbGradient = Instance.new("UIGradient")
@@ -5623,15 +5645,15 @@ function library:Init(key)
 
             local gbStroke = Instance.new("UIStroke")
             gbStroke.Color = library.strokeColor
-            gbStroke.Transparency = 0.48
+            gbStroke.Transparency = 0.58
             gbStroke.Thickness = 1
             gbStroke.Parent = gbFrame
 
             local gbAccentStroke = Instance.new("UIStroke")
             gbAccentStroke.Name = "groupboxAmbientStroke"
             gbAccentStroke.Color = library.accentSoft
-            gbAccentStroke.Transparency = 0.94
-            gbAccentStroke.Thickness = 3
+            gbAccentStroke.Transparency = 0.90
+            gbAccentStroke.Thickness = 2
             gbAccentStroke.Parent = gbFrame
 
             -- Soft lavender light leaking into the card from its header.
@@ -5642,10 +5664,10 @@ function library:Init(key)
                 gbHeaderAura.BackgroundTransparency = 1
                 gbHeaderAura.Image = library.glowAsset
                 gbHeaderAura.ImageColor3 = library.accentColor
-                gbHeaderAura.ImageTransparency = 0.94
+                gbHeaderAura.ImageTransparency = 0.885
                 gbHeaderAura.ScaleType = Enum.ScaleType.Stretch
-                gbHeaderAura.Position = UDim2.new(0, -44, 0, -44)
-                gbHeaderAura.Size = UDim2.new(0, 180, 0, 120)
+                gbHeaderAura.Position = UDim2.new(0, -54, 0, -52)
+                gbHeaderAura.Size = UDim2.new(0, 220, 0, 145)
                 gbHeaderAura.ZIndex = 1
                 gbHeaderAura.Active = false
             end
@@ -5705,16 +5727,16 @@ function library:Init(key)
             gbContentLayout.Parent = gbContent
             gbContentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
             gbContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            gbContentLayout.Padding = UDim.new(0, 5)
+            gbContentLayout.Padding = UDim.new(0, 6)
 
             local gbPadding = Instance.new("UIPadding")
             gbPadding.Parent = gbContent
-            gbPadding.PaddingBottom = UDim.new(0, 11)
-            gbPadding.PaddingLeft = UDim.new(0, 10)
-            gbPadding.PaddingRight = UDim.new(0, 10)
-            gbPadding.PaddingTop = UDim.new(0, 4)
+            gbPadding.PaddingBottom = UDim.new(0, 13)
+            gbPadding.PaddingLeft = UDim.new(0, 12)
+            gbPadding.PaddingRight = UDim.new(0, 12)
+            gbPadding.PaddingTop = UDim.new(0, 6)
 
-            local gbComponentWidth = _groupColWidth - 20
+            local gbComponentWidth = _groupColWidth - 24
             local function gbUpdateSize()
                 UpdatePageSize()
             end
@@ -5793,7 +5815,7 @@ function library:Init(key)
                 BackgroundTransparency = 0
             }):Play()
             TweenService:Create(tabStroke, TweenTable["tab_text_colour"], {Transparency = 0.72}):Play()
-            if tabGlow then TweenService:Create(tabGlow, TweenTable["tab_text_colour"], {ImageTransparency = 0.83}):Play() end
+            if tabGlow then TweenService:Create(tabGlow, TweenTable["tab_text_colour"], {ImageTransparency = 0.79}):Play() end
             if tabIcon.Visible then
                 TweenService:Create(tabIcon, TweenTable["tab_text_colour"], {
                     ImageColor3 = library.accentColor,
