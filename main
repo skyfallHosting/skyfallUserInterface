@@ -6441,7 +6441,7 @@ function library:Init(key)
             gbContent.Name = "gbContent"
             gbContent.Parent = gbFrame
             gbContent.BackgroundTransparency = 1
-            gbContent.Position = UDim2.new(0, 0, 0, 38)
+            gbContent.Position = UDim2.new(0, 12, 0, 38)
             gbContent.Size = UDim2.new(1, -24, 0, 0)
             gbContent.AutomaticSize = Enum.AutomaticSize.Y
 
@@ -6454,8 +6454,8 @@ function library:Init(key)
             local gbPadding = Instance.new("UIPadding")
             gbPadding.Parent = gbContent
             gbPadding.PaddingBottom = UDim.new(0, 13)
-            gbPadding.PaddingLeft = UDim.new(0, 12)
-            gbPadding.PaddingRight = UDim.new(0, 12)
+            gbPadding.PaddingLeft = UDim.new(0, 0)
+            gbPadding.PaddingRight = UDim.new(0, 0)
             gbPadding.PaddingTop = UDim.new(0, 6)
 
             local gbComponentWidth = (fullWidth and _baseW or _groupColWidth) - 24
