@@ -83,6 +83,7 @@ end
 library = {
     version = "3.2.0",
     title = title or "Skyfall Hub",
+    watermarkBrand = "SKYFALL",
     fps = 0,
     rank = "private",
     isMobile = isMobile,
@@ -595,7 +596,12 @@ function library:Watermark(text)
         end
     end
 
-    text = tostring(text or ("SKYFALL  •  " .. tostring(library.title or "Skyfall Hub") .. "  •  v" .. tostring(library.version)))
+    if text == nil then
+        text = tostring(library.watermarkBrand or "SKYFALL")
+            .. "  •  " .. tostring(library.title or "")
+            .. "  •  " .. tostring(library.scriptVersion or ("v" .. tostring(library.version)))
+    end
+    text = tostring(text)
 
     local watermark = Instance.new("ScreenGui")
     watermark.Name = "watermark"
@@ -6751,7 +6757,7 @@ function library:Init(key)
         key = new
         return TabLibrary
     end
-    library:Watermark(productTitle)
+    library:Watermark()
 
     local _skyfallCornerIcon = library:LoadIcon("https://raw.githubusercontent.com/skyfallHosting/skyfallUserInterface/main/CornerIcon.png", "skyfall_corner.png")
     if _skyfallCornerIcon then
