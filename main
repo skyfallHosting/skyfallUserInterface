@@ -81,7 +81,7 @@ local drag = function(obj, latency)
 end
 
 library = {
-    version = "2.6.0",
+    version = "2.7.0",
     title = title or "Skyfall Hub",
     fps = 0,
     rank = "private",
@@ -540,11 +540,16 @@ function library:ApplyTheme()
                             ColorSequenceKeypoint.new(0.55, bg),
                             ColorSequenceKeypoint.new(1, bgDark)
                         } or ColorSequence.new{ColorSequenceKeypoint.new(0, bg), ColorSequenceKeypoint.new(1, bg)}
-                    elseif desc.Name == "tabButtonsGradient" and desc:IsA("UIGradient") then
+                    elseif (desc.Name == "tabButtonsGradient" or desc.Name == "sidebarShellGradient") and desc:IsA("UIGradient") then
+                        -- Inner navigation panel and outer sidebar shell intentionally share
+                        -- the exact same background behavior.
                         desc.Color = self.gradientEnabled and ColorSequence.new{
                             ColorSequenceKeypoint.new(0, bgMid),
                             ColorSequenceKeypoint.new(1, bgDark)
                         } or ColorSequence.new{ColorSequenceKeypoint.new(0, bg), ColorSequenceKeypoint.new(1, bg)}
+                    elseif desc.Name == "sidebarShellStroke" and desc:IsA("UIStroke") then
+                        -- Keep definition via a subtle line instead of a different fill color.
+                        desc.Color = self.strokeSoftColor
                     elseif desc.Name == "groupboxAmbientStroke" and desc:IsA("UIStroke") then
                         desc.Color = self.accentSoft
                     elseif desc.Name == "windowAccentStroke" and desc:IsA("UIStroke") then
@@ -1657,14 +1662,34 @@ function library:Init(key)
     tabButtonsEdge.Name = "tabButtonsEdge"
     tabButtonsEdge.Parent = background
     tabButtonsEdge.AnchorPoint = Vector2.new(0.5, 0.5)
-    tabButtonsEdge.BackgroundColor3 = Color3.fromRGB(27, 27, 38)
+    -- Keep the sidebar shell on the SAME theme-derived surface family as
+    -- the inner navigation panel. This used to be a fixed purple-gray,
+    -- which is why it stayed lighter when Background Color changed.
+    tabButtonsEdge.BackgroundColor3 = library.sidebarColor
     tabButtonsEdge.Position = UDim2.new(0, 108, 0, 308)
     tabButtonsEdge.Size = UDim2.new(0, 190, 0, 454)
     tabButtonsEdge.BorderSizePixel = 0
     tabButtonsEdge.ClipsDescendants = false
     tabButtonsEdge.ZIndex = 3
 
-    local sidebarGlow = library:AddSoftGlow(tabButtonsEdge, 0.905, 18, Color3.fromRGB(103, 74, 177), 1)
+    local sidebarShellGradient = Instance.new("UIGradient")
+    sidebarShellGradient.Name = "sidebarShellGradient"
+    sidebarShellGradient.Parent = tabButtonsEdge
+    sidebarShellGradient.Rotation = 90
+    sidebarShellGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(16, 17, 24)),
+        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(12, 13, 19))
+    }
+
+    -- The shell is now separated by edge light rather than a lighter fill.
+    local sidebarShellStroke = Instance.new("UIStroke")
+    sidebarShellStroke.Name = "sidebarShellStroke"
+    sidebarShellStroke.Parent = tabButtonsEdge
+    sidebarShellStroke.Color = library.strokeSoftColor
+    sidebarShellStroke.Transparency = 0.64
+    sidebarShellStroke.Thickness = 1
+
+    local sidebarGlow = library:AddSoftGlow(tabButtonsEdge, 0.93, 18, library.accentColor, 1)
 
     tabButtonCorner.CornerRadius = UDim.new(0, 12)
     tabButtonCorner.Name = "tabButtonCorner"
