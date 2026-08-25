@@ -597,8 +597,11 @@ function library:Watermark(text)
     end
 
     if text == nil then
+        local watermarkTitle = tostring(library.title or "")
+        watermarkTitle = watermarkTitle:gsub("^%s*[Ss][Kk][Yy][Ff][Aa][Ll][Ll]%s*[•·|]%s*", "")
+        watermarkTitle = watermarkTitle:gsub("%s*[•·|]%s*v%d[%d%.]*%s*$", "")
         text = tostring(library.watermarkBrand or "SKYFALL")
-            .. "  •  " .. tostring(library.title or "")
+            .. "  •  " .. watermarkTitle
             .. "  •  " .. tostring(library.scriptVersion or ("v" .. tostring(library.version)))
     end
     text = tostring(text)
