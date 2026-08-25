@@ -81,7 +81,7 @@ local drag = function(obj, latency)
 end
 
 library = {
-    version = "2.8.0",
+    version = "2.9.0",
     title = title or "Skyfall Hub",
     fps = 0,
     rank = "private",
@@ -2806,54 +2806,67 @@ function library:Init(key)
             toggleLabelPadding.Parent = toggleLabel
             toggleLabelPadding.PaddingLeft = UDim.new(0, 2)
 
-            -- Optional second row for toggle-associated colorways.  It remains
-            -- hidden for normal toggles and is activated by NewColorPicker when
-            -- the picker name matches this toggle (Box + Box Color, etc.).
+            -- v2.9 paired-control layout:
+            --   OPTION NAME
+            --   [TOGGLE]                         [COLOR] [COLOR] [COLOR]
+            -- Normal toggles remain single-row. The moment a related color picker
+            -- follows the toggle, the switch is reparented into this dedicated
+            -- second row and the color chips are right-aligned on that SAME row.
+            local controlsRow = Instance.new("Frame")
+            controlsRow.Name = "toggleControlsRow"
+            controlsRow.Parent = toggleButton
+            controlsRow.BackgroundTransparency = 1
+            controlsRow.Position = UDim2.new(0, 0, 0, 27)
+            controlsRow.Size = UDim2.new(1, 0, 0, 24)
+            controlsRow.Visible = false
+            controlsRow.ClipsDescendants = false
+            controlsRow.ZIndex = 5
+
             local colorWayRow = Instance.new("Frame")
             colorWayRow.Name = "toggleColorWays"
-            colorWayRow.Parent = toggleButton
+            colorWayRow.Parent = controlsRow
+            colorWayRow.AnchorPoint = Vector2.new(1, 0.5)
             colorWayRow.BackgroundTransparency = 1
-            colorWayRow.Position = UDim2.new(0, 56, 0, 29)
+            colorWayRow.Position = UDim2.new(1, -2, 0.5, 0)
             colorWayRow.Size = UDim2.new(1, -58, 0, 20)
-            colorWayRow.Visible = false
+            colorWayRow.Visible = true
             colorWayRow.ClipsDescendants = false
-            colorWayRow.ZIndex = 5
+            colorWayRow.ZIndex = 7
 
-            -- Colorways live in a real grid, not a squeezed horizontal list.
-            -- This keeps 2/3/4+ colors visually separate and wraps cleanly if needed.
-            local colorWayLayout = Instance.new("UIGridLayout")
-            colorWayLayout.Name = "toggleColorWayGrid"
+            local colorWayLayout = Instance.new("UIListLayout")
+            colorWayLayout.Name = "toggleColorWayLayout"
             colorWayLayout.Parent = colorWayRow
-            colorWayLayout.CellSize = UDim2.new(0, 26, 0, 20)
-            colorWayLayout.CellPadding = UDim2.new(0, 7, 0, 6)
             colorWayLayout.FillDirection = Enum.FillDirection.Horizontal
-            colorWayLayout.FillDirectionMaxCells = 99
-            colorWayLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-            colorWayLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+            colorWayLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+            colorWayLayout.VerticalAlignment = Enum.VerticalAlignment.Center
             colorWayLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            colorWayLayout.Padding = UDim.new(0, 7)
 
             local colorRowActive = false
             local colorCount = 0
             local function refreshColorWayRow()
                 if not colorRowActive then return end
-                local available = math.max(_w - 58, 26)
-                local perRow = math.max(1, math.floor((available + 7) / 33))
-                colorWayLayout.FillDirectionMaxCells = perRow
-                local rows = math.max(1, math.ceil(math.max(colorCount, 1) / perRow))
-                local rowHeight = rows * 20 + (rows - 1) * 6
-                colorWayRow.Size = UDim2.new(1, -58, 0, rowHeight)
-                toggleButton.Size = UDim2.new(0, _w, 0, 34 + rowHeight)
+                -- Keep the switch and every color chip on exactly one shared row.
+                -- The right-side container consumes the free space after the switch.
+                colorWayRow.Size = UDim2.new(1, -58, 0, 20)
+                toggleButton.Size = UDim2.new(0, _w, 0, 56)
                 UpdatePageSize()
             end
 
             local function activateColorWayRow()
                 if not colorRowActive then
                     colorRowActive = true
+
+                    -- Top row: option/module name only.
                     toggleLabel.Position = UDim2.new(0, 0, 0, 0)
-                    toggleLabel.Size = UDim2.new(1, -4, 0, 21)
+                    toggleLabel.Size = UDim2.new(1, -4, 0, 22)
                     toggleLabel.TextYAlignment = Enum.TextYAlignment.Center
-                    toggleEdge.Position = UDim2.new(0, 2, 0, 29)
-                    colorWayRow.Visible = true
+
+                    -- Second row: switch left, colorways right.
+                    controlsRow.Visible = true
+                    toggleEdge.Parent = controlsRow
+                    toggleEdge.Position = UDim2.new(0, 2, 0.5, -10)
+                    toggleEdge.ZIndex = 8
                 end
                 refreshColorWayRow()
             end
@@ -4788,7 +4801,7 @@ function library:Init(key)
             sliderFrame.Parent = page
             sliderFrame.BackgroundTransparency = 1
             sliderFrame.ClipsDescendants = true
-            sliderFrame.Size = UDim2.new(0, _w, 0, 58)
+            sliderFrame.Size = UDim2.new(0, _w, 0, 60)
 
             local headerBand = Instance.new("Frame")
             headerBand.Name = "sliderHeaderBand"
@@ -4796,14 +4809,15 @@ function library:Init(key)
             headerBand.BackgroundTransparency = 1
             headerBand.Position = UDim2.new(0, 0, 0, 0)
             headerBand.Size = UDim2.new(1, 0, 0, 26)
-            headerBand.ClipsDescendants = true
+            headerBand.ClipsDescendants = false
+            headerBand.ZIndex = 15
 
             local sliderLabel = Instance.new("TextLabel")
             sliderLabel.Name = "sliderLabel"
             sliderLabel.Parent = headerBand
             sliderLabel.BackgroundTransparency = 1
             sliderLabel.Position = UDim2.new(0, 14, 0, 0)
-            sliderLabel.Size = UDim2.new(1, -122, 1, 0)
+            sliderLabel.Size = UDim2.new(1, -126, 1, 0)
             sliderLabel.Font = Enum.Font.Gotham
             sliderLabel.Text = text
             sliderLabel.TextColor3 = library.textSecondary
@@ -4814,28 +4828,56 @@ function library:Init(key)
             sliderLabel.TextTruncate = Enum.TextTruncate.AtEnd
             sliderLabel.ClipsDescendants = true
             sliderLabel.RichText = false
+            sliderLabel.ZIndex = 16
+
+            -- Dedicated value pill. It is a direct child of sliderFrame with a high
+            -- Z-index, so layout/clipping inside the label band can never erase it.
+            local valuePill = Instance.new("Frame")
+            valuePill.Name = "sliderValuePill"
+            valuePill.Parent = sliderFrame
+            valuePill.AnchorPoint = Vector2.new(1, 0)
+            valuePill.Position = UDim2.new(1, -10, 0, 2)
+            valuePill.Size = UDim2.new(0, 92, 0, 22)
+            valuePill.BackgroundColor3 = library.surfaceHoverColor
+            valuePill.BackgroundTransparency = 0.68
+            valuePill.BorderSizePixel = 0
+            valuePill.ZIndex = 24
+
+            local valuePillCorner = Instance.new("UICorner")
+            valuePillCorner.CornerRadius = UDim.new(0, 6)
+            valuePillCorner.Parent = valuePill
+
+            local valuePillStroke = Instance.new("UIStroke")
+            valuePillStroke.Name = "sliderValueStroke"
+            valuePillStroke.Parent = valuePill
+            valuePillStroke.Color = library.accentSoft
+            valuePillStroke.Transparency = 0.74
+            valuePillStroke.Thickness = 1
 
             local sliderValue = Instance.new("TextLabel")
             sliderValue.Name = "sliderValue"
-            sliderValue.Parent = headerBand
+            sliderValue.Parent = valuePill
             sliderValue.BackgroundTransparency = 1
-            sliderValue.AnchorPoint = Vector2.new(1, 0)
-            sliderValue.Position = UDim2.new(1, -14, 0, 0)
-            sliderValue.Size = UDim2.new(0, 92, 1, 0)
+            sliderValue.Position = UDim2.new(0, 6, 0, 0)
+            sliderValue.Size = UDim2.new(1, -12, 1, 0)
             sliderValue.Font = Enum.Font.GothamSemibold
+            sliderValue.Text = tostring(ValueNum) .. suffix
             sliderValue.TextColor3 = library.accentColor
+            sliderValue.TextTransparency = 0
             sliderValue.TextSize = 12
             sliderValue.TextXAlignment = Enum.TextXAlignment.Right
             sliderValue.TextYAlignment = Enum.TextYAlignment.Center
             sliderValue.TextWrapped = false
-            sliderValue.ClipsDescendants = true
+            sliderValue.ClipsDescendants = false
             sliderValue.RichText = false
+            sliderValue.Visible = true
+            sliderValue.ZIndex = 25
 
             local hit = Instance.new("TextButton")
             hit.Name = "sliderHitTarget"
             hit.Parent = sliderFrame
             hit.BackgroundTransparency = 1
-            hit.Position = UDim2.new(0, 12, 0, 31)
+            hit.Position = UDim2.new(0, 12, 0, 33)
             hit.Size = UDim2.new(1, -24, 0, 22)
             hit.AutoButtonColor = false
             hit.Text = ""
@@ -5035,7 +5077,11 @@ function library:Init(key)
             rail:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
                 if rail.AbsoluteSize.X > 1 then render(false) end
             end)
-            task.defer(function() render(false) end)
+            task.defer(function()
+                render(false)
+                task.wait()
+                render(false)
+            end)
 
             UpdatePageSize()
 
@@ -5135,9 +5181,9 @@ function library:Init(key)
             local cpFrame = Instance.new("Frame")
             cpFrame.Name = "colorPickerFrame"
             cpFrame.Parent = pairRecord and pairRecord.colorRow or page
-            cpFrame.BackgroundTransparency = pairRecord and 0.12 or 1
+            cpFrame.BackgroundTransparency = 1
             cpFrame.BackgroundColor3 = pairRecord and library.inputColor or Color3.fromRGB(255, 255, 255)
-            cpFrame.Size = pairRecord and UDim2.new(0, 26, 0, 20) or UDim2.new(0, _w, 0, 22)
+            cpFrame.Size = pairRecord and UDim2.new(0, 24, 0, 20) or UDim2.new(0, _w, 0, 22)
             cpFrame.ClipsDescendants = false
             if pairRecord then
                 pairRecord.activate()
@@ -5181,7 +5227,7 @@ function library:Init(key)
             preview.Parent = cpFrame
             preview.AnchorPoint = pairRecord and Vector2.new(0.5, 0.5) or Vector2.new(0, 0)
             preview.Position = pairRecord and UDim2.new(0.5, 0, 0.5, 0) or UDim2.new(1, -24, 0, 2)
-            preview.Size = pairRecord and UDim2.new(0, 16, 0, 16) or UDim2.new(0, 18, 0, 18)
+            preview.Size = pairRecord and UDim2.new(0, 18, 0, 18) or UDim2.new(0, 18, 0, 18)
             preview.BackgroundColor3 = currentColor
             preview.BorderSizePixel = 0
             preview.AutoButtonColor = false
