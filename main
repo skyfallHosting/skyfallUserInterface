@@ -96,6 +96,7 @@ library = {
     surfaceColor = Color3.fromRGB(24, 25, 36),
     surfaceRaisedColor = Color3.fromRGB(29, 30, 42),
     surfaceHoverColor = Color3.fromRGB(34, 35, 48),
+    groupColor = Color3.fromRGB(24, 25, 36),
     inputColor = Color3.fromRGB(28, 29, 40),
     inputHoverColor = Color3.fromRGB(36, 37, 51),
     strokeColor = Color3.fromRGB(56, 57, 74),
@@ -552,6 +553,28 @@ function library:ApplyTheme()
                     elseif desc.Name == "sidebarShellStroke" and desc:IsA("UIStroke") then
                         -- Keep definition via a subtle line instead of a different fill color.
                         desc.Color = self.strokeSoftColor
+                    elseif desc.Name:sub(1, 9) == "groupbox_" and desc:IsA("Frame") then
+                        desc.BackgroundColor3 = self.groupColor
+                    elseif desc.Name == "groupboxGradient" and desc:IsA("UIGradient") then
+                        local group = self.groupColor
+                        local groupLight = Color3.new(
+                            math.clamp(group.R * 1.12, 0, 1),
+                            math.clamp(group.G * 1.12, 0, 1),
+                            math.clamp(group.B * 1.12, 0, 1)
+                        )
+                        local groupDark = Color3.new(
+                            math.clamp(group.R * 0.78, 0, 1),
+                            math.clamp(group.G * 0.78, 0, 1),
+                            math.clamp(group.B * 0.78, 0, 1)
+                        )
+                        desc.Color = self.gradientEnabled and ColorSequence.new{
+                            ColorSequenceKeypoint.new(0, groupLight),
+                            ColorSequenceKeypoint.new(0.52, group),
+                            ColorSequenceKeypoint.new(1, groupDark)
+                        } or ColorSequence.new{
+                            ColorSequenceKeypoint.new(0, group),
+                            ColorSequenceKeypoint.new(1, group)
+                        }
                     elseif desc.Name == "groupboxAmbientStroke" and desc:IsA("UIStroke") then
                         desc.Color = self.accentSoft
                     elseif desc.Name == "windowAccentStroke" and desc:IsA("UIStroke") then
@@ -592,7 +615,8 @@ function library:Watermark(text)
     holder.Name = "watermarkHolder"
     holder.Parent = watermark
     holder.BackgroundTransparency = 1
-    holder.Position = UDim2.new(0, 6, 0, 18)
+    holder.AnchorPoint = Vector2.new(0, 1)
+    holder.Position = UDim2.new(0, 6, 1, -10)
     holder.Size = UDim2.new(0, 620, 0, 180)
 
     local holderLayout = Instance.new("UIListLayout")
@@ -601,7 +625,7 @@ function library:Watermark(text)
     holderLayout.SortOrder = Enum.SortOrder.LayoutOrder
     holderLayout.Padding = UDim.new(0, 6)
     holderLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-    holderLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+    holderLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
 
     local function trim(s)
         return tostring(s or ""):match("^%s*(.-)%s*$") or ""
@@ -1028,13 +1052,14 @@ function library:InitNotifications(text, duration, callback)
     end
 
     local Notification = {}
-    function Notification:Notify(text, duration, type, callback)
+    function Notification:Notify(text, duration, type, callback, iconOverride)
         text = tostring(text or "please wait.")
         duration = math.max(0.15, tonumber(duration) or 5)
         type = type or "notification"
         callback = callback or function() end
 
         local accent, typeLabel, iconName = typeStyle(type)
+        iconName = iconOverride or iconName
         local cardH = 58
         local minW, maxW = 250, 440
         local textMeasure = TextService:GetTextSize(text, 12, Enum.Font.GothamMedium, Vector2.new(math.huge, 24))
@@ -2409,6 +2434,9 @@ function library:Init(key)
         Components._width = 584
         Components._updateSize = UpdatePageSize
         Components._screen = screen
+        Components._tabTitle = title
+        Components._notificationIcon = title == "Settings" and "settings"
+            or (title == "Configs" and "folder" or nil)
         function Components:NewLabel(text, alignment)
             self._lastComponentType = "other"
             self._lastToggleRecord = nil
@@ -2881,13 +2909,14 @@ function library:Init(key)
 
         --
 
-        function Components:NewToggle(text, default, callback)
+        function Components:NewToggle(text, default, callback, notificationIcon)
             local page = self._page
             local _w = self._width or 200
             local UpdatePageSize = self._updateSize
             text = text or "toggle"
             default = default or false
             callback = callback or function() end
+            local toggleNotificationIcon = notificationIcon or self._notificationIcon
 
             local toggleButton = Instance.new("TextButton")
             local toggleLayout = Instance.new("UIListLayout")
@@ -3119,7 +3148,9 @@ function library:Init(key)
 
             local function notifyToggle(state)
                 local status = state and "ON" or "OFF"
-                pcall(function() library:Notify(toggleLabel.Text .. " : " .. status, 1.5) end)
+                pcall(function()
+                    library:Notify(toggleLabel.Text .. " : " .. status, 1.5, nil, nil, toggleNotificationIcon)
+                end)
             end
 
             toggleButton.MouseButton1Click:Connect(function()
@@ -4871,13 +4902,17 @@ function library:Init(key)
                 optionButton.MouseEnter:Connect(function()
                     TweenService:Create(optionButton, TweenTable["hover"], {
                         BackgroundTransparency = 0.35,
-                        TextColor3 = optionButton.Text == selectorText.Text and library.accentColor or library.textPrimary
+                        TextColor3 = (multi and selectedValues[optionButton.Text]
+                            or optionButton.Text == selectorText.Text)
+                            and library.accentColor or library.textPrimary
                     }):Play()
                 end)
                 optionButton.MouseLeave:Connect(function()
                     TweenService:Create(optionButton, TweenTable["hover"], {
                         BackgroundTransparency = 1,
-                        TextColor3 = optionButton.Text == selectorText.Text and library.accentColor or library.textSecondary
+                        TextColor3 = (multi and selectedValues[optionButton.Text]
+                            or optionButton.Text == selectorText.Text)
+                            and library.accentColor or library.textSecondary
                     }):Play()
                 end)
                 optionButton.MouseButton1Click:Connect(function()
@@ -5406,7 +5441,14 @@ function library:Init(key)
             end
             function SliderFunctions:Flag(name)
                 if not name then return SliderFunctions end
-                library._flags[name] = SliderFunctions
+                library:RegisterFlag(name, function()
+                    return ValueNum
+                end, function(v)
+                    local n = tonumber(v)
+                    if n == nil then return end
+                    SliderFunctions:Value(n)
+                    pcall(function() callback(ValueNum) end)
+                end, "slider")
                 return SliderFunctions
             end
             return SliderFunctions
@@ -5939,6 +5981,8 @@ function library:Init(key)
                 subComponents._width = _w
                 subComponents._updateSize = UpdatePageSize
                 subComponents._screen = _screen
+                subComponents._tabTitle = self._tabTitle
+                subComponents._notificationIcon = self._notificationIcon
 
                 setmetatable(subComponents, {__index = Components})
 
@@ -6428,6 +6472,8 @@ function library:Init(key)
                 _updateSize = gbUpdateSize,
                 _screen = screen,
                 _groupTitle = title,
+                _tabTitle = Components._tabTitle,
+                _notificationIcon = Components._notificationIcon,
             }, {__index = Components})
 
             return gbComponents
@@ -6604,6 +6650,10 @@ function library:Init(key)
             library.bgColor = color
             library:ApplyTheme()
         end):Flag("_BgColor")
+        settingsTab:NewColorPicker("Group Color", library.groupColor, function(color)
+            library.groupColor = color
+            library:ApplyTheme()
+        end):Flag("_GroupColor")
         settingsTab:NewSeperator()
 
         settingsTab:NewSection("Watermarks")
@@ -6638,11 +6688,13 @@ function library:RegisterFlag(name, getVal, setVal, flagType)
     self._flags[name] = {get = getVal, set = setVal, type = flagType}
 end
 
-function library:Notify(text, duration)
+function library:Notify(text, duration, type, callback, iconOverride)
     if not self._notifier then
         self._notifier = self:InitNotifications()
     end
-    pcall(function() self._notifier:Notify(text, duration or 3) end)
+    pcall(function()
+        self._notifier:Notify(text, duration or 3, type, callback, iconOverride)
+    end)
 end
 
 function library:SetConfigFolder(folder)
@@ -6799,7 +6851,7 @@ function library:BuildConfigSection(tab)
         ensureInList(name)
         configSelector:SetOption(name)
         selectedConfig = name
-        pcall(function() self:Notify("Saved config: " .. name, 3) end)
+        pcall(function() self:Notify("Saved config: " .. name, 3, nil, nil, "folder") end)
     end)
 
     tab:NewButton("Load Config", function()
@@ -6807,7 +6859,7 @@ function library:BuildConfigSection(tab)
         if not name or name == "" then return end
         local ok = pcall(function() return self:LoadConfig(name) end)
         pcall(function()
-            self:Notify(ok and ("Loaded config: " .. name) or ("Failed to load: " .. name), 3)
+            self:Notify(ok and ("Loaded config: " .. name) or ("Failed to load: " .. name), 3, nil, nil, "folder")
         end)
     end)
 
@@ -6816,14 +6868,14 @@ function library:BuildConfigSection(tab)
         if not name or name == "" then return end
         local ok, saved = pcall(function() return self:SetAutoloadConfig(name) end)
         pcall(function()
-            self:Notify(ok and saved and ("Autoload config set: " .. name) or "Failed to set autoload config", 3)
+            self:Notify(ok and saved and ("Autoload config set: " .. name) or "Failed to set autoload config", 3, nil, nil, "folder")
         end)
     end)
 
     tab:NewButton("Clear Config Autoload", function()
         local ok = pcall(function() self:ClearAutoloadConfig() end)
         pcall(function()
-            self:Notify(ok and "Autoload config cleared" or "Failed to clear autoload config", 3)
+            self:Notify(ok and "Autoload config cleared" or "Failed to clear autoload config", 3, nil, nil, "folder")
         end)
     end)
 
@@ -6839,7 +6891,7 @@ function library:BuildConfigSection(tab)
         if selectedConfig ~= "" then
             configSelector:SetOption(selectedConfig)
         end
-        pcall(function() self:Notify("Deleted config: " .. name, 3) end)
+        pcall(function() self:Notify("Deleted config: " .. name, 3, nil, nil, "folder") end)
     end)
 
     tab:NewButton("Refresh Configs", function()
@@ -6850,7 +6902,7 @@ function library:BuildConfigSection(tab)
             end
             configList = newList
         end
-        pcall(function() self:Notify("Refreshed config list", 2) end)
+        pcall(function() self:Notify("Refreshed config list", 2, nil, nil, "folder") end)
     end)
 
     return configSelector
