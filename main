@@ -81,7 +81,7 @@ local drag = function(obj, latency)
 end
 
 library = {
-    version = "2.5.0",
+    version = "2.6.0",
     title = title or "Skyfall Hub",
     fps = 0,
     rank = "private",
@@ -1956,12 +1956,30 @@ function library:Init(key)
         tabButton.Size = UDim2.new(0, 168, 0, 38)
         tabButton.AutoButtonColor = false
         tabButton.Font = Enum.Font.GothamMedium
-        tabButton.Text = "      " .. title
+        tabButton.Text = ""
         tabButton.TextColor3 = library.textMuted
         tabButton.TextSize = 12
         tabButton.TextXAlignment = Enum.TextXAlignment.Left
         tabButton.RichText = true
         tabButton.ZIndex = 6
+
+        -- v2.6: icons and labels live in separate fixed columns.  The old
+        -- implementation indented TextButton.Text, which let Lucide images
+        -- visually collide with the first characters at some UI scales.
+        local tabText = Instance.new("TextLabel")
+        tabText.Name = "tabText"
+        tabText.Parent = tabButton
+        tabText.BackgroundTransparency = 1
+        tabText.Position = UDim2.new(0, 42, 0, 0)
+        tabText.Size = UDim2.new(1, -50, 1, 0)
+        tabText.Font = Enum.Font.GothamMedium
+        tabText.Text = title
+        tabText.TextColor3 = library.textMuted
+        tabText.TextSize = 12
+        tabText.TextXAlignment = Enum.TextXAlignment.Left
+        tabText.TextYAlignment = Enum.TextYAlignment.Center
+        tabText.TextTruncate = Enum.TextTruncate.AtEnd
+        tabText.ZIndex = 8
 
         local tabCorner = Instance.new("UICorner")
         tabCorner.CornerRadius = UDim.new(0, 9)
@@ -1989,7 +2007,7 @@ function library:Init(key)
         tabIcon.Name = "tabLucideIcon"
         tabIcon.Parent = tabButton
         tabIcon.BackgroundTransparency = 1
-        tabIcon.Position = UDim2.new(0, 14, 0.5, -8)
+        tabIcon.Position = UDim2.new(0, 16, 0.5, -8)
         tabIcon.Size = UDim2.new(0, 16, 0, 16)
         tabIcon.ImageColor3 = library.textMuted
         tabIcon.ImageTransparency = 0.12
@@ -2050,6 +2068,7 @@ function library:Init(key)
         if TabLibrary.IsFirst then
             page.Visible = true
             tabButton.TextColor3 = library.textPrimary
+            tabText.TextColor3 = library.textPrimary
             tabButton.BackgroundTransparency = 0
             tabStroke.Transparency = 0.72
             if tabGlow then tabGlow.ImageTransparency = 0.79 end
@@ -2065,9 +2084,9 @@ function library:Init(key)
         tabButton.MouseEnter:Connect(function()
             if TabLibrary.CurrentTab ~= title then
                 TweenService:Create(tabButton, TweenTable["hover"], {
-                    BackgroundTransparency = 0.62,
-                    TextColor3 = library.textSecondary
+                    BackgroundTransparency = 0.62
                 }):Play()
+                TweenService:Create(tabText, TweenTable["hover"], {TextColor3 = library.textSecondary}):Play()
                 TweenService:Create(tabStroke, TweenTable["hover"], {Transparency = 0.88}):Play()
                 if tabGlow then TweenService:Create(tabGlow, TweenTable["hover"], {ImageTransparency = 0.93}):Play() end
                 if tabIcon.Visible then
@@ -2081,9 +2100,9 @@ function library:Init(key)
         tabButton.MouseLeave:Connect(function()
             if TabLibrary.CurrentTab ~= title then
                 TweenService:Create(tabButton, TweenTable["hover"], {
-                    BackgroundTransparency = 1,
-                    TextColor3 = library.textMuted
+                    BackgroundTransparency = 1
                 }):Play()
+                TweenService:Create(tabText, TweenTable["hover"], {TextColor3 = library.textMuted}):Play()
                 TweenService:Create(tabStroke, TweenTable["hover"], {Transparency = 1}):Play()
                 if tabGlow then TweenService:Create(tabGlow, TweenTable["hover"], {ImageTransparency = 1}):Play() end
                 if tabIcon.Visible then
@@ -2115,6 +2134,10 @@ function library:Init(key)
                         TextColor3 = library.textMuted,
                         BackgroundTransparency = 1
                     }):Play()
+                    local t = v:FindFirstChild("tabText")
+                    if t and t:IsA("TextLabel") then
+                        TweenService:Create(t, TweenTable["tab_text_colour"], {TextColor3 = library.textMuted}):Play()
+                    end
                     local s = v:FindFirstChild("tabStroke")
                     if s then TweenService:Create(s, TweenTable["tab_text_colour"], {Transparency = 1}):Play() end
                     local g = v:FindFirstChild("softGlow")
@@ -2133,6 +2156,7 @@ function library:Init(key)
                 TextColor3 = library.textPrimary,
                 BackgroundTransparency = 0
             }):Play()
+            TweenService:Create(tabText, TweenTable["tab_text_colour"], {TextColor3 = library.textPrimary}):Play()
             TweenService:Create(tabStroke, TweenTable["tab_text_colour"], {Transparency = 0.72}):Play()
             if tabGlow then TweenService:Create(tabGlow, TweenTable["tab_text_colour"], {ImageTransparency = 0.79}):Play() end
             if tabIcon.Visible then
@@ -2161,6 +2185,8 @@ function library:Init(key)
         Components._updateSize = UpdatePageSize
         Components._screen = screen
         function Components:NewLabel(text, alignment)
+            self._lastComponentType = "other"
+            self._lastToggleRecord = nil
             local page = self._page
             local _w = self._width
             local UpdatePageSize = self._updateSize
@@ -2239,6 +2265,8 @@ function library:Init(key)
         end
 
         function Components:NewButton(text, callback)
+            self._lastComponentType = "other"
+            self._lastToggleRecord = nil
             local page = self._page
             local _w = self._width
             local UpdatePageSize = self._updateSize
@@ -2259,6 +2287,20 @@ function library:Init(key)
             buttonFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             buttonFrame.BackgroundTransparency = 1.000
             buttonFrame.Size = UDim2.new(0, _w, 0, 32)
+
+            -- v2.6: old scripts often create a full-width button whose text is
+            -- identical to the group/module heading (e.g. MOB ESP -> Mob ESP).
+            -- It is purely redundant in the new card design, so collapse only
+            -- that exact duplicate while leaving real action buttons untouched.
+            local function _cleanComponentName(v)
+                return tostring(v or ""):lower():gsub("[^%w]", "")
+            end
+            local duplicateGroupButton = self._groupTitle ~= nil
+                and _cleanComponentName(text) == _cleanComponentName(self._groupTitle)
+            if duplicateGroupButton then
+                buttonFrame.Visible = false
+                buttonFrame.Size = UDim2.new(0, _w, 0, 0)
+            end
 
             buttonLayout.Name = "buttonLayout"
             buttonLayout.Parent = buttonFrame
@@ -2524,6 +2566,8 @@ function library:Init(key)
         --
 
         function Components:NewSection(text)
+            self._lastComponentType = "other"
+            self._lastToggleRecord = nil
             local page = self._page
             local _w = self._width
             local UpdatePageSize = self._updateSize
@@ -2736,6 +2780,39 @@ function library:Init(key)
             toggleLabelPadding.Name = "toggleLabelPadding"
             toggleLabelPadding.Parent = toggleLabel
             toggleLabelPadding.PaddingLeft = UDim.new(0, 2)
+
+            -- Optional second row for toggle-associated colorways.  It remains
+            -- hidden for normal toggles and is activated by NewColorPicker when
+            -- the picker name matches this toggle (Box + Box Color, etc.).
+            local colorWayRow = Instance.new("Frame")
+            colorWayRow.Name = "toggleColorWays"
+            colorWayRow.Parent = toggleButton
+            colorWayRow.BackgroundTransparency = 1
+            colorWayRow.Position = UDim2.new(0, 54, 0, 29)
+            colorWayRow.Size = UDim2.new(1, -56, 0, 20)
+            colorWayRow.Visible = false
+            colorWayRow.ZIndex = 5
+
+            local colorWayLayout = Instance.new("UIListLayout")
+            colorWayLayout.Parent = colorWayRow
+            colorWayLayout.FillDirection = Enum.FillDirection.Horizontal
+            colorWayLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+            colorWayLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+            colorWayLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            colorWayLayout.Padding = UDim.new(0, 7)
+
+            local colorRowActive = false
+            local function activateColorWayRow()
+                if colorRowActive then return end
+                colorRowActive = true
+                toggleButton.Size = UDim2.new(0, _w, 0, 54)
+                toggleLabel.Position = UDim2.new(0, 0, 0, 0)
+                toggleLabel.Size = UDim2.new(1, -4, 0, 21)
+                toggleLabel.TextYAlignment = Enum.TextYAlignment.Center
+                toggleEdge.Position = UDim2.new(0, 2, 0, 29)
+                colorWayRow.Visible = true
+                UpdatePageSize()
+            end
 
             Extras.Name = "Extras"
             Extras.Parent = toggleButton
@@ -3020,6 +3097,19 @@ function library:Init(key)
                 return ToggleFunctions
             end
 
+            -- Allow a directly-following related color picker to become the
+            -- second-row colorway control instead of overlapping the switch.
+            self._lastComponentType = "toggle"
+            self._lastToggleRecord = {
+                text = text,
+                frame = toggleButton,
+                label = toggleLabel,
+                switch = toggleEdge,
+                colorRow = colorWayRow,
+                activate = activateColorWayRow,
+                colorCount = 0,
+            }
+
             renderToggle(false)
             if default then
                 callback(true)
@@ -3028,6 +3118,8 @@ function library:Init(key)
         end
 
         function Components:NewKeybind(text, default, callback)
+            self._lastComponentType = "other"
+            self._lastToggleRecord = nil
             local page = self._page
             local _w = self._width
             local UpdatePageSize = self._updateSize
@@ -3278,6 +3370,8 @@ function library:Init(key)
         end
         --
         function Components:NewTextbox(text, default, place, format, type, autoexec, autoclear, callback)
+            self._lastComponentType = "other"
+            self._lastToggleRecord = nil
             local page = self._page
             local _w = self._width
             local UpdatePageSize = self._updateSize
@@ -4068,6 +4162,8 @@ function library:Init(key)
         end
         --
         function Components:NewSelector(text, default, list, callback)
+            self._lastComponentType = "other"
+            self._lastToggleRecord = nil
             local page = self._page
             local _w = self._width
             local UpdatePageSize = self._updateSize
@@ -4609,6 +4705,8 @@ function library:Init(key)
         end
         --
         function Components:NewSlider(text, suffix, compare, compareSign, values, callback)
+            self._lastComponentType = "other"
+            self._lastToggleRecord = nil
             local page = self._page
             local _w = self._width
             local UpdatePageSize = self._updateSize
@@ -4647,23 +4745,26 @@ function library:Init(key)
             sliderLabel.Name = "sliderLabel"
             sliderLabel.Parent = sliderFrame
             sliderLabel.BackgroundTransparency = 1
-            sliderLabel.Position = UDim2.new(0, 2, 0, 0)
-            sliderLabel.Size = UDim2.new(1, -4, 0, 22)
+            sliderLabel.Position = UDim2.new(0, 10, 0, 0)
+            sliderLabel.Size = UDim2.new(1, -142, 0, 22)
             sliderLabel.Font = Enum.Font.Gotham
             sliderLabel.Text = text
             sliderLabel.TextColor3 = library.textSecondary
             sliderLabel.TextSize = 13
             sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
             sliderLabel.TextYAlignment = Enum.TextYAlignment.Center
-            sliderLabel.RichText = true
+            sliderLabel.TextWrapped = false
+            sliderLabel.TextTruncate = Enum.TextTruncate.AtEnd
+            sliderLabel.ClipsDescendants = false
+            sliderLabel.RichText = false
 
             local sliderValue = Instance.new("TextLabel")
             sliderValue.Name = "sliderValue"
             sliderValue.Parent = sliderFrame
             sliderValue.BackgroundTransparency = 1
             sliderValue.AnchorPoint = Vector2.new(1, 0)
-            sliderValue.Position = UDim2.new(1, -2, 0, 0)
-            sliderValue.Size = UDim2.new(0, math.min(132, math.floor(_w * 0.48)), 0, 22)
+            sliderValue.Position = UDim2.new(1, -10, 0, 0)
+            sliderValue.Size = UDim2.new(0, 116, 0, 22)
             sliderValue.Font = Enum.Font.GothamSemibold
             sliderValue.TextColor3 = library.accentColor
             sliderValue.TextSize = 12
@@ -4674,8 +4775,8 @@ function library:Init(key)
             hit.Name = "sliderHitTarget"
             hit.Parent = sliderFrame
             hit.BackgroundTransparency = 1
-            hit.Position = UDim2.new(0, 0, 0, 26)
-            hit.Size = UDim2.new(1, 0, 0, 24)
+            hit.Position = UDim2.new(0, 8, 0, 27)
+            hit.Size = UDim2.new(1, -16, 0, 24)
             hit.AutoButtonColor = false
             hit.Text = ""
             hit.ZIndex = 5
@@ -4958,6 +5059,24 @@ function library:Init(key)
 
             local currentColor = default
             local cpH, cpS, cpV = Color3.toHSV(default)
+
+            local function _pairName(v)
+                local n = tostring(v or ""):lower()
+                n = n:gsub("enabled?", "")
+                n = n:gsub("colour", "")
+                n = n:gsub("color", "")
+                n = n:gsub("esp", "")
+                n = n:gsub("[^%w]", "")
+                return n
+            end
+            local pairRecord = nil
+            if self._lastComponentType == "toggle" and self._lastToggleRecord then
+                local tr = self._lastToggleRecord
+                local a, b = _pairName(tr.text), _pairName(text)
+                local related = tr.colorCount > 0
+                    or (a ~= "" and b ~= "" and (a == b or a:find(b, 1, true) or b:find(a, 1, true)))
+                if related then pairRecord = tr end
+            end
             local pickerOpen = false
             local svSize = 200
             local hueBarWidth = 16
@@ -4966,19 +5085,28 @@ function library:Init(key)
 
             local cpFrame = Instance.new("Frame")
             cpFrame.Name = "colorPickerFrame"
-            cpFrame.Parent = page
+            cpFrame.Parent = pairRecord and pairRecord.colorRow or page
             cpFrame.BackgroundTransparency = 1
-            cpFrame.Size = UDim2.new(0, _w, 0, 22)
+            cpFrame.Size = pairRecord and UDim2.new(0, 22, 0, 20) or UDim2.new(0, _w, 0, 22)
+            cpFrame.ClipsDescendants = false
+            if pairRecord then
+                pairRecord.activate()
+                pairRecord.colorCount = pairRecord.colorCount + 1
+            else
+                self._lastComponentType = "other"
+                self._lastToggleRecord = nil
+            end
 
             local cpLabel = Instance.new("TextLabel")
             cpLabel.Name = "cpLabel"
             cpLabel.Parent = cpFrame
             cpLabel.BackgroundTransparency = 1
-            cpLabel.Size = UDim2.new(0, 300, 0, 22)
-            cpLabel.Font = Enum.Font.Code
+            cpLabel.Size = pairRecord and UDim2.new(0, 0, 0, 0) or UDim2.new(1, -42, 0, 22)
+            cpLabel.Visible = not pairRecord
+            cpLabel.Font = Enum.Font.Gotham
             cpLabel.Text = text
-            cpLabel.TextColor3 = Color3.fromRGB(190, 190, 190)
-            cpLabel.TextSize = 14
+            cpLabel.TextColor3 = library.textSecondary
+            cpLabel.TextSize = 12
             cpLabel.TextXAlignment = Enum.TextXAlignment.Left
             cpLabel.RichText = true
             local cpLabelPad = Instance.new("UIPadding")
@@ -4988,33 +5116,33 @@ function library:Init(key)
             local preview = Instance.new("TextButton")
             preview.Name = "colorPreview"
             preview.Parent = cpFrame
-            preview.Position = UDim2.new(1, -30, 0, 2)
+            preview.Position = pairRecord and UDim2.new(0, 1, 0, 1) or UDim2.new(1, -24, 0, 2)
             preview.Size = UDim2.new(0, 18, 0, 18)
             preview.BackgroundColor3 = currentColor
             preview.BorderSizePixel = 0
             preview.AutoButtonColor = false
             preview.Text = ""
             local previewEdge = Instance.new("UIStroke")
-            previewEdge.Color = Color3.fromRGB(60, 60, 60)
-            previewEdge.Thickness = 1
+            previewEdge.Color = library.accentSoft
+            previewEdge.Thickness = 1.25
             previewEdge.Parent = preview
             local previewCorner = Instance.new("UICorner")
-            previewCorner.CornerRadius = UDim.new(0, 2)
+            previewCorner.CornerRadius = UDim.new(0, 5)
             previewCorner.Parent = preview
 
             local popup = Instance.new("Frame")
             popup.Name = "cpPopup"
             popup.Parent = screen
             popup.Size = UDim2.new(0, popupW, 0, popupH)
-            popup.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            popup.BackgroundColor3 = library.surfaceColor
             popup.BorderSizePixel = 0
             popup.Visible = false
             popup.ZIndex = 100
             local popupCorner = Instance.new("UICorner")
-            popupCorner.CornerRadius = UDim.new(0, 4)
+            popupCorner.CornerRadius = UDim.new(0, 10)
             popupCorner.Parent = popup
             local popupStroke = Instance.new("UIStroke")
-            popupStroke.Color = Color3.fromRGB(60, 60, 60)
+            popupStroke.Color = library.accentSoft
             popupStroke.Thickness = 1
             popupStroke.Parent = popup
 
@@ -5219,6 +5347,8 @@ function library:Init(key)
         end
         --
         function Components:NewSeperator()
+            self._lastComponentType = "other"
+            self._lastToggleRecord = nil
             local page = self._page
             local _w = self._width
             local UpdatePageSize = self._updateSize
@@ -5285,6 +5415,8 @@ function library:Init(key)
         --
 
         function Components:NewSubTabGroup(tabs)
+            self._lastComponentType = "other"
+            self._lastToggleRecord = nil
             local page = self._page
             local _w = self._width
             local UpdatePageSize = self._updateSize
@@ -5446,6 +5578,8 @@ function library:Init(key)
         --
 
         function Components:NewKeypicker(text, default, callback)
+            self._lastComponentType = "other"
+            self._lastToggleRecord = nil
             local page = self._page
             local _w = self._width
             local UpdatePageSize = self._updateSize
@@ -5913,6 +6047,7 @@ function library:Init(key)
                 _width = gbComponentWidth,
                 _updateSize = gbUpdateSize,
                 _screen = screen,
+                _groupTitle = title,
             }, {__index = Components})
 
             return gbComponents
@@ -5960,6 +6095,10 @@ function library:Init(key)
                         TextColor3 = library.textMuted,
                         BackgroundTransparency = 1
                     }):Play()
+                    local t = v:FindFirstChild("tabText")
+                    if t and t:IsA("TextLabel") then
+                        TweenService:Create(t, TweenTable["tab_text_colour"], {TextColor3 = library.textMuted}):Play()
+                    end
                     local s = v:FindFirstChild("tabStroke")
                     if s then TweenService:Create(s, TweenTable["tab_text_colour"], {Transparency = 1}):Play() end
                     local g = v:FindFirstChild("softGlow")
@@ -5978,6 +6117,7 @@ function library:Init(key)
                 TextColor3 = library.textPrimary,
                 BackgroundTransparency = 0
             }):Play()
+            TweenService:Create(tabText, TweenTable["tab_text_colour"], {TextColor3 = library.textPrimary}):Play()
             TweenService:Create(tabStroke, TweenTable["tab_text_colour"], {Transparency = 0.72}):Play()
             if tabGlow then TweenService:Create(tabGlow, TweenTable["tab_text_colour"], {ImageTransparency = 0.79}):Play() end
             if tabIcon.Visible then
@@ -6013,7 +6153,7 @@ function library:Init(key)
         --
         function Components:Text(text)
             text = text or "new text"
-            tabButton.Text = text
+            tabText.Text = text
 
             return Components
         end
