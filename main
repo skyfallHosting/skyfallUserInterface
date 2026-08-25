@@ -81,7 +81,7 @@ local drag = function(obj, latency)
 end
 
 library = {
-    version = "2.7.0",
+    version = "2.8.0",
     title = title or "Skyfall Hub",
     fps = 0,
     rank = "private",
@@ -2813,30 +2813,49 @@ function library:Init(key)
             colorWayRow.Name = "toggleColorWays"
             colorWayRow.Parent = toggleButton
             colorWayRow.BackgroundTransparency = 1
-            colorWayRow.Position = UDim2.new(0, 54, 0, 29)
-            colorWayRow.Size = UDim2.new(1, -56, 0, 20)
+            colorWayRow.Position = UDim2.new(0, 56, 0, 29)
+            colorWayRow.Size = UDim2.new(1, -58, 0, 20)
             colorWayRow.Visible = false
+            colorWayRow.ClipsDescendants = false
             colorWayRow.ZIndex = 5
 
-            local colorWayLayout = Instance.new("UIListLayout")
+            -- Colorways live in a real grid, not a squeezed horizontal list.
+            -- This keeps 2/3/4+ colors visually separate and wraps cleanly if needed.
+            local colorWayLayout = Instance.new("UIGridLayout")
+            colorWayLayout.Name = "toggleColorWayGrid"
             colorWayLayout.Parent = colorWayRow
+            colorWayLayout.CellSize = UDim2.new(0, 26, 0, 20)
+            colorWayLayout.CellPadding = UDim2.new(0, 7, 0, 6)
             colorWayLayout.FillDirection = Enum.FillDirection.Horizontal
+            colorWayLayout.FillDirectionMaxCells = 99
             colorWayLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-            colorWayLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+            colorWayLayout.VerticalAlignment = Enum.VerticalAlignment.Top
             colorWayLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            colorWayLayout.Padding = UDim.new(0, 7)
 
             local colorRowActive = false
-            local function activateColorWayRow()
-                if colorRowActive then return end
-                colorRowActive = true
-                toggleButton.Size = UDim2.new(0, _w, 0, 54)
-                toggleLabel.Position = UDim2.new(0, 0, 0, 0)
-                toggleLabel.Size = UDim2.new(1, -4, 0, 21)
-                toggleLabel.TextYAlignment = Enum.TextYAlignment.Center
-                toggleEdge.Position = UDim2.new(0, 2, 0, 29)
-                colorWayRow.Visible = true
+            local colorCount = 0
+            local function refreshColorWayRow()
+                if not colorRowActive then return end
+                local available = math.max(_w - 58, 26)
+                local perRow = math.max(1, math.floor((available + 7) / 33))
+                colorWayLayout.FillDirectionMaxCells = perRow
+                local rows = math.max(1, math.ceil(math.max(colorCount, 1) / perRow))
+                local rowHeight = rows * 20 + (rows - 1) * 6
+                colorWayRow.Size = UDim2.new(1, -58, 0, rowHeight)
+                toggleButton.Size = UDim2.new(0, _w, 0, 34 + rowHeight)
                 UpdatePageSize()
+            end
+
+            local function activateColorWayRow()
+                if not colorRowActive then
+                    colorRowActive = true
+                    toggleLabel.Position = UDim2.new(0, 0, 0, 0)
+                    toggleLabel.Size = UDim2.new(1, -4, 0, 21)
+                    toggleLabel.TextYAlignment = Enum.TextYAlignment.Center
+                    toggleEdge.Position = UDim2.new(0, 2, 0, 29)
+                    colorWayRow.Visible = true
+                end
+                refreshColorWayRow()
             end
 
             Extras.Name = "Extras"
@@ -3132,6 +3151,13 @@ function library:Init(key)
                 switch = toggleEdge,
                 colorRow = colorWayRow,
                 activate = activateColorWayRow,
+                refresh = refreshColorWayRow,
+                getColorCount = function() return colorCount end,
+                incrementColorCount = function()
+                    colorCount = colorCount + 1
+                    refreshColorWayRow()
+                    return colorCount
+                end,
                 colorCount = 0,
             }
 
@@ -4754,24 +4780,30 @@ function library:Init(key)
             end
             ValueNum = math.clamp(ValueNum, minValue, maxValue)
 
-            -- A slider is deliberately split into two isolated bands:
-            --  0..22  = label/value
-            -- 28..50  = hit target + rail
-            -- No UIListLayout is parented to either band, so nothing can
-            -- silently override the rail/thumb positions.
+            -- v2.8: fully isolated slider geometry. The title/value row and the
+            -- rail row are siblings with their own clipping bounds. Neither can
+            -- bleed into the groupbox border or into one another.
             local sliderFrame = Instance.new("Frame")
             sliderFrame.Name = "sliderFrame"
             sliderFrame.Parent = page
             sliderFrame.BackgroundTransparency = 1
-            sliderFrame.ClipsDescendants = false
-            sliderFrame.Size = UDim2.new(0, _w, 0, 54)
+            sliderFrame.ClipsDescendants = true
+            sliderFrame.Size = UDim2.new(0, _w, 0, 58)
+
+            local headerBand = Instance.new("Frame")
+            headerBand.Name = "sliderHeaderBand"
+            headerBand.Parent = sliderFrame
+            headerBand.BackgroundTransparency = 1
+            headerBand.Position = UDim2.new(0, 0, 0, 0)
+            headerBand.Size = UDim2.new(1, 0, 0, 26)
+            headerBand.ClipsDescendants = true
 
             local sliderLabel = Instance.new("TextLabel")
             sliderLabel.Name = "sliderLabel"
-            sliderLabel.Parent = sliderFrame
+            sliderLabel.Parent = headerBand
             sliderLabel.BackgroundTransparency = 1
-            sliderLabel.Position = UDim2.new(0, 10, 0, 0)
-            sliderLabel.Size = UDim2.new(1, -142, 0, 22)
+            sliderLabel.Position = UDim2.new(0, 14, 0, 0)
+            sliderLabel.Size = UDim2.new(1, -122, 1, 0)
             sliderLabel.Font = Enum.Font.Gotham
             sliderLabel.Text = text
             sliderLabel.TextColor3 = library.textSecondary
@@ -4780,30 +4812,34 @@ function library:Init(key)
             sliderLabel.TextYAlignment = Enum.TextYAlignment.Center
             sliderLabel.TextWrapped = false
             sliderLabel.TextTruncate = Enum.TextTruncate.AtEnd
-            sliderLabel.ClipsDescendants = false
+            sliderLabel.ClipsDescendants = true
             sliderLabel.RichText = false
 
             local sliderValue = Instance.new("TextLabel")
             sliderValue.Name = "sliderValue"
-            sliderValue.Parent = sliderFrame
+            sliderValue.Parent = headerBand
             sliderValue.BackgroundTransparency = 1
             sliderValue.AnchorPoint = Vector2.new(1, 0)
-            sliderValue.Position = UDim2.new(1, -10, 0, 0)
-            sliderValue.Size = UDim2.new(0, 116, 0, 22)
+            sliderValue.Position = UDim2.new(1, -14, 0, 0)
+            sliderValue.Size = UDim2.new(0, 92, 1, 0)
             sliderValue.Font = Enum.Font.GothamSemibold
             sliderValue.TextColor3 = library.accentColor
             sliderValue.TextSize = 12
             sliderValue.TextXAlignment = Enum.TextXAlignment.Right
             sliderValue.TextYAlignment = Enum.TextYAlignment.Center
+            sliderValue.TextWrapped = false
+            sliderValue.ClipsDescendants = true
+            sliderValue.RichText = false
 
             local hit = Instance.new("TextButton")
             hit.Name = "sliderHitTarget"
             hit.Parent = sliderFrame
             hit.BackgroundTransparency = 1
-            hit.Position = UDim2.new(0, 8, 0, 27)
-            hit.Size = UDim2.new(1, -16, 0, 24)
+            hit.Position = UDim2.new(0, 12, 0, 31)
+            hit.Size = UDim2.new(1, -24, 0, 22)
             hit.AutoButtonColor = false
             hit.Text = ""
+            hit.ClipsDescendants = false
             hit.ZIndex = 5
 
             local rail = Instance.new("Frame")
@@ -4812,8 +4848,8 @@ function library:Init(key)
             rail.AnchorPoint = Vector2.new(0, 0.5)
             rail.BackgroundColor3 = Color3.fromRGB(31, 32, 42)
             rail.BorderSizePixel = 0
-            rail.Position = UDim2.new(0, 3, 0.5, 0)
-            rail.Size = UDim2.new(1, -6, 0, 4)
+            rail.Position = UDim2.new(0, 7, 0.5, 0)
+            rail.Size = UDim2.new(1, -14, 0, 4)
             rail.ClipsDescendants = false
             rail.ZIndex = 5
 
@@ -4825,7 +4861,7 @@ function library:Init(key)
             railStroke.Name = "sliderRailStroke"
             railStroke.Parent = rail
             railStroke.Color = library.strokeColor
-            railStroke.Transparency = 0.65
+            railStroke.Transparency = 0.68
             railStroke.Thickness = 1
 
             local railGradient = Instance.new("UIGradient")
@@ -4862,7 +4898,7 @@ function library:Init(key)
             fillStroke.Name = "sliderIndicatorGlow"
             fillStroke.Parent = fill
             fillStroke.Color = library.accentColor
-            fillStroke.Transparency = 0.62
+            fillStroke.Transparency = 0.64
             fillStroke.Thickness = 1.5
 
             local thumb = Instance.new("Frame")
@@ -4871,7 +4907,7 @@ function library:Init(key)
             thumb.AnchorPoint = Vector2.new(0.5, 0.5)
             thumb.BackgroundColor3 = Color3.fromRGB(242, 237, 255)
             thumb.BorderSizePixel = 0
-            thumb.Position = UDim2.new(0, 8, 0.5, 0)
+            thumb.Position = UDim2.new(0, 13, 0.5, 0)
             thumb.Size = UDim2.new(0, 12, 0, 12)
             thumb.ZIndex = 9
 
@@ -4890,8 +4926,7 @@ function library:Init(key)
 
             local function decimalsForStep()
                 if not step then return nil end
-                local s = tostring(step)
-                local dec = s:match("%.(%d+)")
+                local dec = tostring(step):match("%.(%d+)")
                 return dec and #dec or nil
             end
             local stepDecimals = decimalsForStep()
@@ -4918,14 +4953,6 @@ function library:Init(key)
             end
 
             local THUMB_RADIUS = 6
-            local function railGeometry()
-                local railWidth = rail.AbsoluteSize.X
-                if railWidth <= 1 then railWidth = math.max(_w - 6, 1) end
-                local leftX = rail.Position.X.Offset + THUMB_RADIUS
-                local usable = math.max(railWidth - (THUMB_RADIUS * 2), 1)
-                return railWidth, leftX, usable
-            end
-
             local function ratioForValue(v)
                 local span = maxValue - minValue
                 if span <= 0 then return 0 end
@@ -4933,19 +4960,19 @@ function library:Init(key)
             end
 
             local function render(animated)
+                local railWidth = math.max(rail.AbsoluteSize.X, 1)
                 local ratio = ratioForValue(ValueNum)
-                local railWidth, leftX, usable = railGeometry()
-                local thumbX = leftX + ratio * usable
-                -- Fill ends at thumb center, while thumb itself is clamped inside
-                -- the rail endpoints by THUMB_RADIUS on both sides.
-                local fillWidth = math.clamp(thumbX - rail.Position.X.Offset, 0, railWidth)
+                local usable = math.max(railWidth - THUMB_RADIUS * 2, 1)
+                local centerInRail = THUMB_RADIUS + ratio * usable
+                local centerInHit = rail.Position.X.Offset + centerInRail
+                local fillWidth = math.clamp(centerInRail, 0, railWidth)
                 local targetFill = UDim2.new(0, fillWidth, 1, 0)
-                local targetThumb = UDim2.new(0, thumbX, 0.5, 0)
+                local targetThumb = UDim2.new(0, centerInHit, 0.5, 0)
                 sliderValue.Text = displayValue(ValueNum)
 
                 if animated then
-                    TweenService:Create(fill, TweenInfo.new(0.055, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = targetFill}):Play()
-                    TweenService:Create(thumb, TweenInfo.new(0.055, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = targetThumb}):Play()
+                    TweenService:Create(fill, TweenInfo.new(0.045, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = targetFill}):Play()
+                    TweenService:Create(thumb, TweenInfo.new(0.045, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = targetThumb}):Play()
                 else
                     fill.Size = targetFill
                     thumb.Position = targetThumb
@@ -4957,10 +4984,9 @@ function library:Init(key)
                 local railWidth = rail.AbsoluteSize.X
                 if railWidth <= 1 then return end
                 local localX = screenX - rail.AbsolutePosition.X
-                local usable = math.max(railWidth - (THUMB_RADIUS * 2), 1)
+                local usable = math.max(railWidth - THUMB_RADIUS * 2, 1)
                 local ratio = math.clamp((localX - THUMB_RADIUS) / usable, 0, 1)
-                local newValue = minValue + ratio * (maxValue - minValue)
-                ValueNum = quantize(newValue)
+                ValueNum = quantize(minValue + ratio * (maxValue - minValue))
                 render(false)
                 if fireCallback then
                     pcall(function() callback(ValueNum) end)
@@ -4985,7 +5011,7 @@ function library:Init(key)
             hit.MouseLeave:Connect(function()
                 TweenService:Create(sliderLabel, TweenTable["hover"], {TextColor3 = library.textSecondary}):Play()
                 if not sliding then
-                    TweenService:Create(railStroke, TweenTable["hover"], {Color = library.strokeColor, Transparency = 0.65}):Play()
+                    TweenService:Create(railStroke, TweenTable["hover"], {Color = library.strokeColor, Transparency = 0.68}):Play()
                 end
             end)
 
@@ -5000,7 +5026,7 @@ function library:Init(key)
                     if sliding then
                         sliding = false
                         TweenService:Create(thumb, TweenTable["hover"], {Size = UDim2.new(0, 12, 0, 12)}):Play()
-                        TweenService:Create(railStroke, TweenTable["hover"], {Color = library.strokeColor, Transparency = 0.65}):Play()
+                        TweenService:Create(railStroke, TweenTable["hover"], {Color = library.strokeColor, Transparency = 0.68}):Play()
                         if thumbGlow then TweenService:Create(thumbGlow, TweenTable["hover"], {ImageTransparency = 0.76}):Play() end
                     end
                 end
@@ -5025,8 +5051,7 @@ function library:Init(key)
             function SliderFunctions:Max(new)
                 local n = tonumber(new)
                 if n ~= nil then
-                    maxValue = n
-                    if maxValue < minValue then maxValue = minValue end
+                    maxValue = math.max(n, minValue)
                     ValueNum = math.clamp(ValueNum, minValue, maxValue)
                     render(false)
                 end
@@ -5035,8 +5060,7 @@ function library:Init(key)
             function SliderFunctions:Min(new)
                 local n = tonumber(new)
                 if n ~= nil then
-                    minValue = n
-                    if minValue > maxValue then minValue = maxValue end
+                    minValue = math.min(n, maxValue)
                     ValueNum = math.clamp(ValueNum, minValue, maxValue)
                     render(false)
                 end
@@ -5111,12 +5135,26 @@ function library:Init(key)
             local cpFrame = Instance.new("Frame")
             cpFrame.Name = "colorPickerFrame"
             cpFrame.Parent = pairRecord and pairRecord.colorRow or page
-            cpFrame.BackgroundTransparency = 1
-            cpFrame.Size = pairRecord and UDim2.new(0, 22, 0, 20) or UDim2.new(0, _w, 0, 22)
+            cpFrame.BackgroundTransparency = pairRecord and 0.12 or 1
+            cpFrame.BackgroundColor3 = pairRecord and library.inputColor or Color3.fromRGB(255, 255, 255)
+            cpFrame.Size = pairRecord and UDim2.new(0, 26, 0, 20) or UDim2.new(0, _w, 0, 22)
             cpFrame.ClipsDescendants = false
             if pairRecord then
                 pairRecord.activate()
-                pairRecord.colorCount = pairRecord.colorCount + 1
+                if pairRecord.incrementColorCount then
+                    pairRecord.colorCount = pairRecord.incrementColorCount()
+                else
+                    pairRecord.colorCount = pairRecord.colorCount + 1
+                end
+                local chipCorner = Instance.new("UICorner")
+                chipCorner.CornerRadius = UDim.new(0, 6)
+                chipCorner.Parent = cpFrame
+                local chipStroke = Instance.new("UIStroke")
+                chipStroke.Name = "colorChipStroke"
+                chipStroke.Color = library.strokeColor
+                chipStroke.Transparency = 0.34
+                chipStroke.Thickness = 1
+                chipStroke.Parent = cpFrame
             else
                 self._lastComponentType = "other"
                 self._lastToggleRecord = nil
@@ -5141,15 +5179,17 @@ function library:Init(key)
             local preview = Instance.new("TextButton")
             preview.Name = "colorPreview"
             preview.Parent = cpFrame
-            preview.Position = pairRecord and UDim2.new(0, 1, 0, 1) or UDim2.new(1, -24, 0, 2)
-            preview.Size = UDim2.new(0, 18, 0, 18)
+            preview.AnchorPoint = pairRecord and Vector2.new(0.5, 0.5) or Vector2.new(0, 0)
+            preview.Position = pairRecord and UDim2.new(0.5, 0, 0.5, 0) or UDim2.new(1, -24, 0, 2)
+            preview.Size = pairRecord and UDim2.new(0, 16, 0, 16) or UDim2.new(0, 18, 0, 18)
             preview.BackgroundColor3 = currentColor
             preview.BorderSizePixel = 0
             preview.AutoButtonColor = false
             preview.Text = ""
             local previewEdge = Instance.new("UIStroke")
-            previewEdge.Color = library.accentSoft
-            previewEdge.Thickness = 1.25
+            previewEdge.Color = pairRecord and Color3.fromRGB(225, 225, 235) or library.accentSoft
+            previewEdge.Transparency = pairRecord and 0.28 or 0
+            previewEdge.Thickness = pairRecord and 1 or 1.25
             previewEdge.Parent = preview
             local previewCorner = Instance.new("UICorner")
             previewCorner.CornerRadius = UDim.new(0, 5)
