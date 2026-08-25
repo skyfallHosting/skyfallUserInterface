@@ -81,7 +81,7 @@ local drag = function(obj, latency)
 end
 
 library = {
-    version = "2.4.0",
+    version = "2.5.0",
     title = title or "Skyfall Hub",
     fps = 0,
     rank = "private",
@@ -4076,20 +4076,29 @@ function library:Init(key)
             list = list or {}
             callback = callback or function() end
 
-            local dropW = math.max(math.floor(_w * 0.48), 96)
+            -- Keep the selector compact. The dropdown itself is an overlay popup and
+            -- never participates in the page/groupbox AutomaticSize calculation.
+            local dropW = math.max(math.floor(_w * 0.48), 118)
+            local rowH = 34
+            local optionH = 30
+            local optionGap = 2
+            local popupPad = 6
+            local maxPopupH = 166
+            local popupZ = 80
 
             local selectorFrame = Instance.new("Frame")
             selectorFrame.Name = "selectorFrame"
             selectorFrame.Parent = page
             selectorFrame.BackgroundTransparency = 1
             selectorFrame.ClipsDescendants = false
-            selectorFrame.Size = UDim2.new(0, _w, 0, 34)
+            selectorFrame.Size = UDim2.new(0, _w, 0, rowH)
+            selectorFrame.ZIndex = popupZ - 10
 
             local selectorLabel = Instance.new("TextLabel")
             selectorLabel.Name = "selectorLabel"
             selectorLabel.Parent = selectorFrame
             selectorLabel.BackgroundTransparency = 1
-            selectorLabel.Size = UDim2.new(0, _w - dropW - 10, 0, 34)
+            selectorLabel.Size = UDim2.new(0, _w - dropW - 12, 0, rowH)
             selectorLabel.Position = UDim2.new(0, 0, 0, 0)
             selectorLabel.Font = Enum.Font.Gotham
             selectorLabel.Text = text
@@ -4097,6 +4106,7 @@ function library:Init(key)
             selectorLabel.TextSize = 13
             selectorLabel.TextXAlignment = Enum.TextXAlignment.Left
             selectorLabel.RichText = true
+            selectorLabel.ZIndex = popupZ - 9
 
             local selectorLabelPadding = Instance.new("UIPadding")
             selectorLabelPadding.Name = "selectorLabelPadding"
@@ -4112,10 +4122,10 @@ function library:Init(key)
             selector.AutoButtonColor = false
             selector.Text = ""
             selector.ClipsDescendants = false
+            selector.ZIndex = popupZ - 8
 
             local selectorCorner = Instance.new("UICorner")
             selectorCorner.CornerRadius = UDim.new(0, 8)
-            selectorCorner.Name = "selectorCorner"
             selectorCorner.Parent = selector
 
             local selectorStroke = Instance.new("UIStroke")
@@ -4125,7 +4135,7 @@ function library:Init(key)
             selectorStroke.Transparency = 0.60
             selectorStroke.Thickness = 1
 
-            local selectorGlow = library:AddSoftGlow(selector, 1, 10, library.accentColor, 0)
+            local selectorGlow = library:AddSoftGlow(selector, 1, 10, library.accentColor, popupZ - 9)
 
             local selectorTwo = Instance.new("Frame")
             selectorTwo.Name = "selectorTwo"
@@ -4133,315 +4143,457 @@ function library:Init(key)
             selectorTwo.AnchorPoint = Vector2.new(0.5, 0.5)
             selectorTwo.BackgroundColor3 = library.inputColor
             selectorTwo.Position = UDim2.new(0.5, 0, 0.5, 0)
-            selectorTwo.Size = UDim2.new(0, dropW - 2, 0, 28)
+            selectorTwo.Size = UDim2.new(1, -2, 1, -2)
             selectorTwo.ClipsDescendants = true
+            selectorTwo.ZIndex = popupZ - 7
 
             local selectorTwoGradient = Instance.new("UIGradient")
-            selectorTwoGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(28, 29, 38)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(22, 23, 31))}
+            selectorTwoGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0.00, Color3.fromRGB(28, 29, 38)),
+                ColorSequenceKeypoint.new(1.00, Color3.fromRGB(22, 23, 31))
+            }
             selectorTwoGradient.Rotation = 90
-            selectorTwoGradient.Name = "selectorTwoGradient"
             selectorTwoGradient.Parent = selectorTwo
 
             local selectorTwoCorner = Instance.new("UICorner")
-            selectorTwoCorner.CornerRadius = UDim.new(0, 6)
-            selectorTwoCorner.Name = "selectorTwoCorner"
+            selectorTwoCorner.CornerRadius = UDim.new(0, 7)
             selectorTwoCorner.Parent = selectorTwo
 
             local selectorText = Instance.new("TextLabel")
             selectorText.Name = "selectorText"
             selectorText.Parent = selectorTwo
             selectorText.BackgroundTransparency = 1
-            selectorText.Size = UDim2.new(1, -20, 1, 0)
+            selectorText.Size = UDim2.new(1, -28, 1, 0)
             selectorText.Position = UDim2.new(0, 0, 0, 0)
             selectorText.Font = Enum.Font.GothamMedium
-            selectorText.Text = default
+            selectorText.Text = tostring(default)
             selectorText.TextColor3 = library.textPrimary
             selectorText.TextSize = 12
             selectorText.TextXAlignment = Enum.TextXAlignment.Left
             selectorText.ClipsDescendants = true
             selectorText.RichText = true
+            selectorText.ZIndex = popupZ - 6
 
             local selectorTextPadding = Instance.new("UIPadding")
-            selectorTextPadding.Name = "selectorTextPadding"
             selectorTextPadding.Parent = selectorText
-            selectorTextPadding.PaddingLeft = UDim.new(0, 5)
+            selectorTextPadding.PaddingLeft = UDim.new(0, 8)
 
             local selectorArrow = Instance.new("ImageLabel")
             selectorArrow.Name = "selectorArrow"
             selectorArrow.Parent = selectorTwo
             selectorArrow.BackgroundTransparency = 1
             selectorArrow.Size = UDim2.new(0, 13, 0, 13)
-            selectorArrow.Position = UDim2.new(1, -18, 0.5, -6)
+            selectorArrow.Position = UDim2.new(1, -20, 0.5, -6)
             selectorArrow.ImageColor3 = library.textMuted
             selectorArrow.ScaleType = Enum.ScaleType.Fit
-            selectorArrow.ZIndex = 5
+            selectorArrow.ZIndex = popupZ - 5
+
+            local fallbackArrow = nil
             local chevronAsset = library:LoadLucideIcon("chevron-down")
             if chevronAsset then
                 selectorArrow.Image = chevronAsset
             else
                 selectorArrow.Visible = false
-                local fallbackArrow = Instance.new("TextLabel")
+                fallbackArrow = Instance.new("TextLabel")
                 fallbackArrow.Name = "selectorArrowFallback"
                 fallbackArrow.Parent = selectorTwo
                 fallbackArrow.BackgroundTransparency = 1
                 fallbackArrow.Size = UDim2.new(0, 18, 1, 0)
-                fallbackArrow.Position = UDim2.new(1, -18, 0, 0)
+                fallbackArrow.Position = UDim2.new(1, -20, 0, 0)
                 fallbackArrow.Font = Enum.Font.GothamMedium
-                fallbackArrow.Text = "v"
+                fallbackArrow.Text = "⌄"
                 fallbackArrow.TextColor3 = library.textMuted
-                fallbackArrow.TextSize = 9
-                fallbackArrow.ZIndex = 5
+                fallbackArrow.TextSize = 12
+                fallbackArrow.ZIndex = popupZ - 5
             end
 
-            local selectorContainer = Instance.new("Frame")
+            -- Popup glow lives outside the ScrollingFrame so it cannot be clipped by
+            -- the scrolling viewport.
+            local popupGlowHost = Instance.new("Frame")
+            popupGlowHost.Name = "selectorPopupGlowHost"
+            popupGlowHost.Parent = selectorFrame
+            popupGlowHost.BackgroundTransparency = 1
+            popupGlowHost.Position = UDim2.new(1, -dropW, 0, rowH + 3)
+            popupGlowHost.Size = UDim2.new(0, dropW, 0, 0)
+            popupGlowHost.Visible = false
+            popupGlowHost.ZIndex = popupZ - 2
+
+            local popupGlow = library:AddSoftGlow(popupGlowHost, 0.91, 14, library.accentColor, popupZ - 3)
+
+            local selectorContainer = Instance.new("ScrollingFrame")
             selectorContainer.Name = "selectorContainer"
             selectorContainer.Parent = selectorFrame
-            selectorContainer.BackgroundColor3 = library.surfaceColor
+            selectorContainer.BackgroundColor3 = Color3.fromRGB(16, 17, 24)
+            selectorContainer.BackgroundTransparency = 0.02
             selectorContainer.BorderSizePixel = 0
-            selectorContainer.Position = UDim2.new(1, -dropW, 0, 34)
+            selectorContainer.Position = UDim2.new(1, -dropW, 0, rowH + 3)
             selectorContainer.Size = UDim2.new(0, dropW, 0, 0)
+            selectorContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+            selectorContainer.ScrollBarThickness = 2
+            selectorContainer.ScrollBarImageColor3 = library.accentSoft
+            selectorContainer.ScrollBarImageTransparency = 0.32
+            selectorContainer.ScrollingDirection = Enum.ScrollingDirection.Y
             selectorContainer.ClipsDescendants = true
+            selectorContainer.Visible = false
+            selectorContainer.ZIndex = popupZ
 
             local selectorContainerCorner = Instance.new("UICorner")
-            selectorContainerCorner.CornerRadius = UDim.new(0, 7)
+            selectorContainerCorner.CornerRadius = UDim.new(0, 9)
             selectorContainerCorner.Parent = selectorContainer
 
             local selectorContainerStroke = Instance.new("UIStroke")
-            selectorContainerStroke.Color = library.strokeSoftColor
+            selectorContainerStroke.Color = library.accentSoft
             selectorContainerStroke.Transparency = 0.42
             selectorContainerStroke.Thickness = 1
             selectorContainerStroke.Parent = selectorContainer
 
-            local selectorContainerGlow = library:AddSoftGlow(selectorContainer, 0.89, 12, library.accentColor, 0)
-            if selectorContainerGlow then selectorContainerGlow.Visible = false end
+            local popupGradient = Instance.new("UIGradient")
+            popupGradient.Name = "selectorPopupGradient"
+            popupGradient.Parent = selectorContainer
+            popupGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0.00, Color3.fromRGB(24, 22, 34)),
+                ColorSequenceKeypoint.new(0.45, Color3.fromRGB(17, 18, 26)),
+                ColorSequenceKeypoint.new(1.00, Color3.fromRGB(13, 14, 21))
+            }
+            popupGradient.Rotation = 90
+
+            local popupPadding = Instance.new("UIPadding")
+            popupPadding.Parent = selectorContainer
+            popupPadding.PaddingTop = UDim.new(0, popupPad)
+            popupPadding.PaddingBottom = UDim.new(0, popupPad)
+            popupPadding.PaddingLeft = UDim.new(0, 4)
+            popupPadding.PaddingRight = UDim.new(0, 4)
 
             local selectorContainerLayout = Instance.new("UIListLayout")
             selectorContainerLayout.Name = "selectorContainerLayout"
             selectorContainerLayout.Parent = selectorContainer
             selectorContainerLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
             selectorContainerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            selectorContainerLayout.Padding = UDim.new(0, optionGap)
 
-            CreateTween("selector", 0.08)
-            CreateTween("selector_drop", 0.15)
-            CreateTween("chevron", 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+            CreateTween("selector", 0.09)
+            CreateTween("selector_drop", 0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+            CreateTween("chevron", 0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
             local selectorOpen = false
-            local closedH = 34
+            local popupHeight = 0
 
-            local function countOptions()
-                local c = 0
+            local function optionButtons()
+                local result = {}
                 for _, child in ipairs(selectorContainer:GetChildren()) do
-                    if child:IsA("TextButton") then c = c + 1 end
+                    if child:IsA("TextButton") and child.Name == "optionButton" then
+                        table.insert(result, child)
+                    end
                 end
-                return c
+                return result
+            end
+
+            local function refreshPopupGeometry()
+                local count = #optionButtons()
+                local contentH = popupPad * 2
+                if count > 0 then
+                    contentH = contentH + count * optionH + (count - 1) * optionGap
+                end
+                popupHeight = math.min(contentH, maxPopupH)
+                selectorContainer.CanvasSize = UDim2.new(0, 0, 0, contentH)
+
+                -- Prefer opening down. If it would leave the viewport, flip upward.
+                local viewportY = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.Y or 720
+                local selectorBottom = selector.AbsolutePosition.Y + selector.AbsoluteSize.Y
+                local roomBelow = viewportY - selectorBottom - 18
+                local openAbove = popupHeight > roomBelow and selector.AbsolutePosition.Y > popupHeight + 18
+                local yOffset = openAbove and (-popupHeight - 3) or (rowH + 3)
+
+                selectorContainer.Position = UDim2.new(1, -dropW, 0, yOffset)
+                popupGlowHost.Position = selectorContainer.Position
+                return popupHeight
+            end
+
+            local function setChevron(open)
+                local rotation = open and 180 or 0
+                local color = open and library.accentColor or library.textMuted
+                if selectorArrow.Visible then
+                    TweenService:Create(selectorArrow, TweenTable["chevron"], {
+                        Rotation = rotation,
+                        ImageColor3 = color
+                    }):Play()
+                elseif fallbackArrow then
+                    TweenService:Create(fallbackArrow, TweenTable["chevron"], {
+                        Rotation = rotation,
+                        TextColor3 = color
+                    }):Play()
+                end
             end
 
             local function collapseSelector()
+                if not selectorOpen then return end
                 selectorOpen = false
-                library._closeActivePopup = nil
-                TweenService:Create(selectorArrow, TweenTable["chevron"], {
-                    Rotation = 0,
-                    ImageColor3 = library.textMuted
+                _popupActive = false
+                if library._closeActivePopup == collapseSelector then
+                    library._closeActivePopup = nil
+                end
+                setChevron(false)
+
+                TweenService:Create(selectorContainer, TweenTable["selector_drop"], {
+                    Size = UDim2.new(0, dropW, 0, 0)
                 }):Play()
-                TweenService:Create(selectorContainer, TweenTable["selector_drop"], {Size = UDim2.new(0, dropW, 0, 0)}):Play()
-                TweenService:Create(selectorFrame, TweenTable["selector_drop"], {Size = UDim2.new(0, _w, 0, closedH)}):Play()
-                TweenService:Create(selector, TweenTable["selector"], {BackgroundColor3 = library.strokeColor}):Play()
+                TweenService:Create(popupGlowHost, TweenTable["selector_drop"], {
+                    Size = UDim2.new(0, dropW, 0, 0)
+                }):Play()
+                TweenService:Create(selector, TweenTable["selector"], {
+                    BackgroundColor3 = library.strokeColor
+                }):Play()
                 TweenService:Create(selectorStroke, TweenTable["selector"], {
                     Color = library.strokeColor,
                     Transparency = 0.60
                 }):Play()
-                if selectorGlow then TweenService:Create(selectorGlow, TweenTable["selector"], {ImageTransparency = 1}):Play() end
-                if selectorContainerGlow then
-                    TweenService:Create(selectorContainerGlow, TweenTable["selector_drop"], {ImageTransparency = 1}):Play()
-                    task.delay(0.15, function()
-                        if not selectorOpen and selectorContainerGlow then selectorContainerGlow.Visible = false end
-                    end)
+                if selectorGlow then
+                    TweenService:Create(selectorGlow, TweenTable["selector"], {ImageTransparency = 1}):Play()
                 end
-                task.delay(0.15, UpdatePageSize)
+                if popupGlow then
+                    TweenService:Create(popupGlow, TweenTable["selector_drop"], {ImageTransparency = 1}):Play()
+                end
+
+                task.delay(0.15, function()
+                    if not selectorOpen then
+                        selectorContainer.Visible = false
+                        popupGlowHost.Visible = false
+                    end
+                end)
             end
 
             local function expandSelector()
-                if library._closeActivePopup then library._closeActivePopup() end
-                selectorOpen = true
-                library._closeActivePopup = collapseSelector
-                if selectorContainerGlow then
-                    selectorContainerGlow.Visible = true
-                    selectorContainerGlow.ImageTransparency = 0.91
+                if selectorOpen then return end
+                if library._closeActivePopup then
+                    pcall(library._closeActivePopup)
                 end
-                TweenService:Create(selectorArrow, TweenTable["chevron"], {
-                    Rotation = 180,
-                    ImageColor3 = library.accentColor
+
+                selectorOpen = true
+                _popupActive = true
+                library._closeActivePopup = collapseSelector
+                local h = refreshPopupGeometry()
+                if h <= 0 then
+                    selectorOpen = false
+                    _popupActive = false
+                    library._closeActivePopup = nil
+                    return
+                end
+
+                selectorContainer.Visible = true
+                popupGlowHost.Visible = true
+                selectorContainer.Size = UDim2.new(0, dropW, 0, 0)
+                popupGlowHost.Size = UDim2.new(0, dropW, 0, 0)
+                setChevron(true)
+
+                TweenService:Create(selectorContainer, TweenTable["selector_drop"], {
+                    Size = UDim2.new(0, dropW, 0, h)
                 }):Play()
-                local optH = countOptions() * 28
-                selectorContainer.Size = UDim2.new(0, dropW, 0, optH)
-                TweenService:Create(selectorFrame, TweenTable["selector_drop"], {Size = UDim2.new(0, _w, 0, closedH + optH)}):Play()
-                TweenService:Create(selector, TweenTable["selector"], {BackgroundColor3 = accentDark(0.72)}):Play()
+                TweenService:Create(popupGlowHost, TweenTable["selector_drop"], {
+                    Size = UDim2.new(0, dropW, 0, h)
+                }):Play()
+                TweenService:Create(selector, TweenTable["selector"], {
+                    BackgroundColor3 = accentDark(0.72)
+                }):Play()
                 TweenService:Create(selectorStroke, TweenTable["selector"], {
                     Color = library.accentColor,
-                    Transparency = 0.32
+                    Transparency = 0.28
                 }):Play()
-                if selectorGlow then TweenService:Create(selectorGlow, TweenTable["selector"], {ImageTransparency = 0.84}):Play() end
-                task.delay(0.15, UpdatePageSize)
+                if selectorGlow then
+                    TweenService:Create(selectorGlow, TweenTable["selector"], {ImageTransparency = 0.84}):Play()
+                end
+                if popupGlow then
+                    TweenService:Create(popupGlow, TweenTable["selector_drop"], {ImageTransparency = 0.90}):Play()
+                end
             end
 
-            local function toggleSelector()
+            selector.MouseButton1Click:Connect(function()
                 if selectorOpen then collapseSelector() else expandSelector() end
-            end
+            end)
 
-            selector.MouseButton1Click:Connect(toggleSelector)
             selector.MouseEnter:Connect(function()
                 if not selectorOpen then
                     TweenService:Create(selectorStroke, TweenTable["hover"], {
                         Color = library.accentSoft,
-                        Transparency = 0.68
+                        Transparency = 0.58
                     }):Play()
-                    TweenService:Create(selectorTwo, TweenTable["hover"], {BackgroundColor3 = library.inputHoverColor}):Play()
-                    if selectorGlow then TweenService:Create(selectorGlow, TweenTable["hover"], {ImageTransparency = 0.95}):Play() end
+                    TweenService:Create(selectorTwo, TweenTable["hover"], {
+                        BackgroundColor3 = library.inputHoverColor
+                    }):Play()
+                    if selectorGlow then
+                        TweenService:Create(selectorGlow, TweenTable["hover"], {ImageTransparency = 0.95}):Play()
+                    end
                 end
             end)
+
             selector.MouseLeave:Connect(function()
                 if not selectorOpen then
                     TweenService:Create(selectorStroke, TweenTable["hover"], {
                         Color = library.strokeColor,
                         Transparency = 0.60
                     }):Play()
-                    TweenService:Create(selectorTwo, TweenTable["hover"], {BackgroundColor3 = library.inputColor}):Play()
-                    if selectorGlow then TweenService:Create(selectorGlow, TweenTable["hover"], {ImageTransparency = 1}):Play() end
+                    TweenService:Create(selectorTwo, TweenTable["hover"], {
+                        BackgroundColor3 = library.inputColor
+                    }):Play()
+                    if selectorGlow then
+                        TweenService:Create(selectorGlow, TweenTable["hover"], {ImageTransparency = 1}):Play()
+                    end
                 end
             end)
+
+            local function recolorOptions()
+                for _, button in ipairs(optionButtons()) do
+                    local selected = button.Text == selectorText.Text
+                    button.TextColor3 = selected and library.accentColor or library.textSecondary
+                    button.BackgroundTransparency = 1
+                end
+            end
 
             local function hookOptionClick(optionButton)
                 optionButton.MouseEnter:Connect(function()
                     TweenService:Create(optionButton, TweenTable["hover"], {
-                        BackgroundTransparency = 0.42,
+                        BackgroundTransparency = 0.35,
                         TextColor3 = optionButton.Text == selectorText.Text and library.accentColor or library.textPrimary
                     }):Play()
                 end)
                 optionButton.MouseLeave:Connect(function()
                     TweenService:Create(optionButton, TweenTable["hover"], {
                         BackgroundTransparency = 1,
-                        TextColor3 = optionButton.Text == selectorText.Text and library.accentColor or Color3.fromRGB(160, 160, 175)
+                        TextColor3 = optionButton.Text == selectorText.Text and library.accentColor or library.textSecondary
                     }):Play()
                 end)
                 optionButton.MouseButton1Click:Connect(function()
-                    for _, x in next, selectorContainer:GetChildren() do
-                        if x:IsA("TextButton") then
-                            TweenService:Create(x, TweenTable["selector"], {
-                                TextColor3 = Color3.fromRGB(160, 160, 175),
-                                BackgroundTransparency = 1
-                            }):Play()
-                        end
-                    end
-                    TweenService:Create(optionButton, TweenTable["selector"], {TextColor3 = library.accentColor}):Play()
                     selectorText.Text = optionButton.Text
-                    callback(optionButton.Text)
+                    recolorOptions()
+                    pcall(function() callback(optionButton.Text) end)
                     collapseSelector()
                 end)
             end
 
-            for i, v in next, list do
+            local function createOption(value)
                 local optionButton = Instance.new("TextButton")
                 optionButton.Name = "optionButton"
                 optionButton.Parent = selectorContainer
                 optionButton.BackgroundColor3 = library.surfaceHoverColor
                 optionButton.BackgroundTransparency = 1
-                optionButton.Size = UDim2.new(1, -6, 0, 28)
+                optionButton.Size = UDim2.new(1, -2, 0, optionH)
                 optionButton.AutoButtonColor = false
                 optionButton.Font = Enum.Font.Gotham
-                optionButton.Text = v
-                optionButton.TextColor3 = Color3.fromRGB(160, 160, 160)
+                optionButton.Text = tostring(value)
+                optionButton.TextColor3 = library.textSecondary
                 optionButton.TextSize = 12
+                optionButton.TextXAlignment = Enum.TextXAlignment.Left
+                optionButton.ZIndex = popupZ + 1
+
+                local optionPadding = Instance.new("UIPadding")
+                optionPadding.Parent = optionButton
+                optionPadding.PaddingLeft = UDim.new(0, 9)
+                optionPadding.PaddingRight = UDim.new(0, 7)
+
                 local optionCorner = Instance.new("UICorner")
                 optionCorner.CornerRadius = UDim.new(0, 6)
                 optionCorner.Parent = optionButton
-                if optionButton.Text == default then
-                    optionButton.TextColor3 = library.accentColor
-                    callback(selectorText.Text)
-                end
+
                 hookOptionClick(optionButton)
+                return optionButton
             end
 
-            selectorFrame.Size = UDim2.new(0, _w, 0, closedH)
+            for _, v in next, list do
+                local optionButton = createOption(v)
+                if optionButton.Text == tostring(default) then
+                    optionButton.TextColor3 = library.accentColor
+                    pcall(function() callback(selectorText.Text) end)
+                end
+            end
+
+            refreshPopupGeometry()
+            recolorOptions()
             UpdatePageSize()
 
             local SelectorFunctions = {}
             function SelectorFunctions:AddOption(new, callback_f)
                 new = new or "option"
-                list[new] = new
-
-                local optionButton = Instance.new("TextButton")
-                optionButton.Name = "optionButton"
-                optionButton.Parent = selectorContainer
-                optionButton.BackgroundColor3 = library.surfaceHoverColor
-                optionButton.BackgroundTransparency = 1
-                optionButton.Size = UDim2.new(1, -6, 0, 28)
-                optionButton.AutoButtonColor = false
-                optionButton.Font = Enum.Font.Gotham
-                optionButton.Text = new
-                optionButton.TextColor3 = Color3.fromRGB(140, 140, 140)
-                optionButton.TextSize = 12
-                local optionCorner = Instance.new("UICorner")
-                optionCorner.CornerRadius = UDim.new(0, 6)
-                optionCorner.Parent = optionButton
-
-                hookOptionClick(optionButton)
-                if selectorOpen then expandSelector() end
+                table.insert(list, new)
+                local optionButton = createOption(new)
+                if callback_f then
+                    optionButton.MouseButton1Click:Connect(function()
+                        pcall(callback_f, optionButton.Text)
+                    end)
+                end
+                refreshPopupGeometry()
+                recolorOptions()
+                if selectorOpen then
+                    local h = refreshPopupGeometry()
+                    selectorContainer.Size = UDim2.new(0, dropW, 0, h)
+                    popupGlowHost.Size = UDim2.new(0, dropW, 0, h)
+                end
                 return SelectorFunctions
             end
             --
             function SelectorFunctions:RemoveOption(option)
-                list[option] = nil
-
-                for _, v in pairs(selectorContainer:GetDescendants()) do
-                    if v:IsA("TextButton") and v.Text == option then
+                local target = tostring(option)
+                for i = #list, 1, -1 do
+                    if tostring(list[i]) == target then
+                        table.remove(list, i)
+                    end
+                end
+                for _, v in ipairs(optionButtons()) do
+                    if v.Text == target then
                         v:Destroy()
                         break
                     end
                 end
-
-                if selectorText.Text == option then
+                if selectorText.Text == target then
                     selectorText.Text = ". . ."
                 end
-
-                if selectorOpen then expandSelector() end
+                task.defer(function()
+                    refreshPopupGeometry()
+                    recolorOptions()
+                    if selectorOpen then
+                        local h = refreshPopupGeometry()
+                        selectorContainer.Size = UDim2.new(0, dropW, 0, h)
+                        popupGlowHost.Size = UDim2.new(0, dropW, 0, h)
+                    end
+                end)
                 return SelectorFunctions
             end
             --
             function SelectorFunctions:SetFunction(new)
-                new = new or callback
-                callback = new
+                callback = new or callback
                 return SelectorFunctions
             end
             --
             function SelectorFunctions:Text(new)
-                new = new or selectorLabel.Text
-                selectorLabel.Text = new
+                selectorLabel.Text = new or selectorLabel.Text
                 return SelectorFunctions
             end
             --
             function SelectorFunctions:Hide()
+                collapseSelector()
                 selectorFrame.Visible = false
+                UpdatePageSize()
                 return SelectorFunctions
             end
             --
             function SelectorFunctions:Show()
                 selectorFrame.Visible = true
+                UpdatePageSize()
                 return SelectorFunctions
             end
             --
             function SelectorFunctions:Remove()
+                collapseSelector()
                 selectorFrame:Destroy()
+                UpdatePageSize()
                 return SelectorFunctions
             end
             function SelectorFunctions:SetOption(option)
-                for _, child in ipairs(selectorContainer:GetChildren()) do
-                    if child:IsA("TextButton") then
-                        TweenService:Create(child, TweenTable["selector"], {TextColor3 = Color3.fromRGB(140, 140, 140)}):Play()
-                        if child.Text == option then
-                            TweenService:Create(child, TweenTable["selector"], {TextColor3 = library.accentColor}):Play()
-                            selectorText.Text = option
-                            pcall(function() callback(option) end)
-                        end
+                local wanted = tostring(option)
+                for _, child in ipairs(optionButtons()) do
+                    if child.Text == wanted then
+                        selectorText.Text = wanted
+                        recolorOptions()
+                        pcall(function() callback(wanted) end)
+                        break
                     end
                 end
                 return SelectorFunctions
