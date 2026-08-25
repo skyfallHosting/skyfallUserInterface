@@ -2215,7 +2215,7 @@ function library:Init(key)
             self._lastComponentType = "other"
             self._lastToggleRecord = nil
             local page = self._page
-            local _w = self._width
+            local _w = self._width or 200
             local UpdatePageSize = self._updateSize
             text = text or "label"
             alignment = alignment or "left"
@@ -2295,7 +2295,7 @@ function library:Init(key)
             self._lastComponentType = "other"
             self._lastToggleRecord = nil
             local page = self._page
-            local _w = self._width
+            local _w = self._width or 200
             local UpdatePageSize = self._updateSize
             text = text or "button"
             callback = callback or function() end
@@ -2596,7 +2596,7 @@ function library:Init(key)
             self._lastComponentType = "other"
             self._lastToggleRecord = nil
             local page = self._page
-            local _w = self._width
+            local _w = self._width or 200
             local UpdatePageSize = self._updateSize
             text = text or "section"
 
@@ -2685,7 +2685,7 @@ function library:Init(key)
 
         function Components:NewToggle(text, default, callback)
             local page = self._page
-            local _w = self._width
+            local _w = self._width or 200
             local UpdatePageSize = self._updateSize
             text = text or "toggle"
             default = default or false
@@ -3176,7 +3176,7 @@ function library:Init(key)
             self._lastComponentType = "other"
             self._lastToggleRecord = nil
             local page = self._page
-            local _w = self._width
+            local _w = self._width or 200
             local UpdatePageSize = self._updateSize
             if isMobile then
                 local stub = {}
@@ -3428,7 +3428,7 @@ function library:Init(key)
             self._lastComponentType = "other"
             self._lastToggleRecord = nil
             local page = self._page
-            local _w = self._width
+            local _w = self._width or 200
             local UpdatePageSize = self._updateSize
             text = text or "text box"
             default = default or ""
@@ -4218,7 +4218,7 @@ function library:Init(key)
         --
         function Components:NewSelector(text, default, list, callback)
             local page = self._page
-            local _w = self._width
+            local _w = self._width or 200
             local UpdatePageSize = self._updateSize
             text = text or "selector"
             default = default or ". . ."
@@ -4794,7 +4794,7 @@ function library:Init(key)
             self._lastComponentType = "other"
             self._lastToggleRecord = nil
             local page = self._page
-            local _w = self._width
+            local _w = self._width or 200
             local UpdatePageSize = self._updateSize
 
             text = text or "slider"
@@ -4823,7 +4823,7 @@ function library:Init(key)
             sliderFrame.Parent = page
             sliderFrame.BackgroundTransparency = 1
             sliderFrame.ClipsDescendants = true
-            sliderFrame.Size = UDim2.new(0, _w, 0, 60)
+            sliderFrame.Size = UDim2.new(1, 0, 0, 60)
 
             local headerBand = Instance.new("Frame")
             headerBand.Name = "sliderHeaderBand"
@@ -4839,7 +4839,7 @@ function library:Init(key)
             sliderLabel.Parent = headerBand
             sliderLabel.BackgroundTransparency = 1
             sliderLabel.Position = UDim2.new(0, 14, 0, 0)
-            sliderLabel.Size = UDim2.new(1, -126, 1, 0)
+            sliderLabel.Size = UDim2.new(1, -105, 1, 0)
             sliderLabel.Font = Enum.Font.Gotham
             sliderLabel.Text = text
             sliderLabel.TextColor3 = library.textSecondary
@@ -4856,11 +4856,11 @@ function library:Init(key)
             -- stays visible without looking like another input field.
             local sliderValue = Instance.new("TextLabel")
             sliderValue.Name = "sliderValue"
-            sliderValue.Parent = sliderFrame
+            sliderValue.Parent = headerBand
             sliderValue.BackgroundTransparency = 1
             sliderValue.AnchorPoint = Vector2.new(1, 0)
             sliderValue.Position = UDim2.new(1, -10, 0, 2)
-            sliderValue.Size = UDim2.new(0, 92, 0, 22)
+            sliderValue.Size = UDim2.new(0, 70, 0, 22)
             sliderValue.Font = Enum.Font.GothamSemibold
             sliderValue.Text = tostring(ValueNum) .. suffix
             sliderValue.TextColor3 = library.accentColor
@@ -4872,7 +4872,7 @@ function library:Init(key)
             sliderValue.ClipsDescendants = false
             sliderValue.RichText = false
             sliderValue.Visible = true
-            sliderValue.ZIndex = 25
+            sliderValue.ZIndex = 50
 
             local hit = Instance.new("TextButton")
             hit.Name = "sliderHitTarget"
@@ -5146,7 +5146,7 @@ function library:Init(key)
 
         function Components:NewColorPicker(text, default, callback)
             local page = self._page
-            local _w = self._width
+            local _w = self._width or 200
             local UpdatePageSize = self._updateSize
             local screen = self._screen
             text = text or "Color Picker"
@@ -5462,7 +5462,7 @@ function library:Init(key)
             self._lastComponentType = "other"
             self._lastToggleRecord = nil
             local page = self._page
-            local _w = self._width
+            local _w = self._width or 200
             local UpdatePageSize = self._updateSize
             local sectionFrame = Instance.new("Frame")
             local sectionLayout = Instance.new("UIListLayout")
@@ -5530,7 +5530,7 @@ function library:Init(key)
             self._lastComponentType = "other"
             self._lastToggleRecord = nil
             local page = self._page
-            local _w = self._width
+            local _w = self._width or 200
             local UpdatePageSize = self._updateSize
             local _screen = self._screen
             tabs = tabs or {}
@@ -5693,7 +5693,7 @@ function library:Init(key)
             self._lastComponentType = "other"
             self._lastToggleRecord = nil
             local page = self._page
-            local _w = self._width
+            local _w = self._width or 200
             local UpdatePageSize = self._updateSize
             if isMobile then
                 local stub = {}
@@ -6130,7 +6130,7 @@ function library:Init(key)
             gbContent.Parent = gbFrame
             gbContent.BackgroundTransparency = 1
             gbContent.Position = UDim2.new(0, 0, 0, 38)
-            gbContent.Size = UDim2.new(1, 0, 0, 0)
+            gbContent.Size = UDim2.new(1, -24, 0, 0)
             gbContent.AutomaticSize = Enum.AutomaticSize.Y
 
             local gbContentLayout = Instance.new("UIListLayout")
