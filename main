@@ -5650,78 +5650,196 @@ function library:Init(key)
                 pcall(function() callback(currentColor) end)
             end
 
+            -- Color-picker interaction state.  The old implementation polled
+            -- Mouse.X/Mouse.Y in a RenderStepped while-loop.  That made touch
+            -- input effectively non-functional and could leave stale drag state.
+            local removed = false
+            local dragTarget = nil -- "sv" | "hue" | nil
+            local dragTouch = nil
+            local pickerConnections = {}
+
+            local function bindPickerConnection(signal, fn)
+                local connection = signal:Connect(fn)
+                table.insert(pickerConnections, connection)
+                table.insert(library._connections, connection)
+                return connection
+            end
+
+            local function stopPickerDrag()
+                dragTarget = nil
+                dragTouch = nil
+            end
+
             local function positionPopup()
-                local px = preview.AbsolutePosition.X - popupW - 4
-                local py = preview.AbsolutePosition.Y
-                local viewportSize = workspace.CurrentCamera.ViewportSize
-                if px < 0 then px = preview.AbsolutePosition.X + 22 end
-                if py + popupH > viewportSize.Y then py = viewportSize.Y - popupH - 4 end
-                popup.Position = UDim2.new(0, px, 0, py)
+                if removed or not preview.Parent or not popup.Parent then return end
+
+                local camera = workspace.CurrentCamera
+                if not camera then return end
+
+                local viewportSize = camera.ViewportSize
+                local previewPos = preview.AbsolutePosition
+                local previewSize = preview.AbsoluteSize
+
+                -- Prefer the left side. If it does not fit, use the right side.
+                local px = previewPos.X - popupW - 6
+                if px < 4 then
+                    px = previewPos.X + previewSize.X + 6
+                end
+
+                -- Clamp on every edge instead of only correcting the bottom.
+                local maxX = math.max(4, viewportSize.X - popupW - 4)
+                local maxY = math.max(4, viewportSize.Y - popupH - 4)
+                px = math.clamp(px, 4, maxX)
+                local py = math.clamp(previewPos.Y, 4, maxY)
+
+                popup.Position = UDim2.fromOffset(px, py)
             end
 
             local function closePopup()
-                if not pickerOpen then return end
+                stopPickerDrag()
+
+                if removed then
+                    if library._closeActivePopup == closePopup then
+                        library._closeActivePopup = nil
+                        _popupActive = false
+                    end
+                    pickerOpen = false
+                    return
+                end
+
                 pickerOpen = false
-                popup.Visible = false
-                _popupActive = false
+                if popup.Parent then
+                    popup.Visible = false
+                end
+
+                -- Only release the global popup lock if this picker owns it.
                 if library._closeActivePopup == closePopup then
                     library._closeActivePopup = nil
+                    _popupActive = false
                 end
             end
 
+            local function updateDragAt(screenPosition)
+                if removed or not pickerOpen or not dragTarget then return end
+
+                if dragTarget == "sv" then
+                    local absPos = svFrame.AbsolutePosition
+                    local absSize = svFrame.AbsoluteSize
+                    if absSize.X <= 1 or absSize.Y <= 1 then return end
+
+                    cpS = math.clamp((screenPosition.X - absPos.X) / absSize.X, 0, 1)
+                    cpV = 1 - math.clamp((screenPosition.Y - absPos.Y) / absSize.Y, 0, 1)
+                    updateCPColor()
+                elseif dragTarget == "hue" then
+                    local absPos = hueBar.AbsolutePosition
+                    local absSize = hueBar.AbsoluteSize
+                    if absSize.Y <= 1 then return end
+
+                    cpH = math.clamp((screenPosition.Y - absPos.Y) / absSize.Y, 0, 1)
+                    updateCPColor()
+                end
+            end
+
+            local function beginPickerDrag(target, inp)
+                if removed or not pickerOpen then return end
+                if inp.UserInputType ~= Enum.UserInputType.MouseButton1
+                    and inp.UserInputType ~= Enum.UserInputType.Touch then
+                    return
+                end
+
+                dragTarget = target
+                dragTouch = inp.UserInputType == Enum.UserInputType.Touch and inp or nil
+                updateDragAt(inp.Position)
+            end
+
             preview.MouseButton1Click:Connect(function()
+                if removed then return end
+
                 if pickerOpen then
                     closePopup()
-                else
-                    if library._closeActivePopup then
-                        library._closeActivePopup()
-                    end
+                    return
+                end
+
+                if library._closeActivePopup and library._closeActivePopup ~= closePopup then
+                    -- A removed/invalid older popup should never prevent a new
+                    -- color picker from opening.
+                    pcall(library._closeActivePopup)
+                end
+
+                positionPopup()
+                popup.Visible = true
+                pickerOpen = true
+                _popupActive = true
+                library._closeActivePopup = closePopup
+            end)
+
+            -- Keep a top-level popup attached to its preview if the page scrolls
+            -- or the parent layout moves while it is open.
+            bindPickerConnection(preview:GetPropertyChangedSignal("AbsolutePosition"), function()
+                if pickerOpen then
                     positionPopup()
-                    popup.Visible = true
-                    pickerOpen = true
-                    _popupActive = true
-                    library._closeActivePopup = closePopup
                 end
             end)
 
-            table.insert(library._connections, UserInputService.InputBegan:Connect(function(inp)
-                if not pickerOpen then return end
-                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            bindPickerConnection(UserInputService.InputBegan, function(inp)
+                if removed or not pickerOpen then return end
+
+                if inp.UserInputType == Enum.UserInputType.MouseButton1
+                    or inp.UserInputType == Enum.UserInputType.Touch then
                     local pos = inp.Position
                     local pAbs = popup.AbsolutePosition
                     local pSize = popup.AbsoluteSize
-                    if pos.X < pAbs.X or pos.X > pAbs.X + pSize.X or pos.Y < pAbs.Y or pos.Y > pAbs.Y + pSize.Y then
+
+                    local insidePopup =
+                        pos.X >= pAbs.X and pos.X <= pAbs.X + pSize.X
+                        and pos.Y >= pAbs.Y and pos.Y <= pAbs.Y + pSize.Y
+
+                    if not insidePopup then
                         local prAbs = preview.AbsolutePosition
                         local prSize = preview.AbsoluteSize
-                        if pos.X < prAbs.X or pos.X > prAbs.X + prSize.X or pos.Y < prAbs.Y or pos.Y > prAbs.Y + prSize.Y then
+                        local insidePreview =
+                            pos.X >= prAbs.X and pos.X <= prAbs.X + prSize.X
+                            and pos.Y >= prAbs.Y and pos.Y <= prAbs.Y + prSize.Y
+
+                        if not insidePreview then
                             closePopup()
                         end
                     end
                 end
-            end))
+            end)
 
             svFrame.InputBegan:Connect(function(inp)
-                if not pickerOpen then return end
-                if inp.UserInputType ~= Enum.UserInputType.MouseButton1 and inp.UserInputType ~= Enum.UserInputType.Touch then return end
-                while pickerOpen and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-                    local absPos = svFrame.AbsolutePosition
-                    local absSize = svFrame.AbsoluteSize
-                    cpS = math.clamp((Mouse.X - absPos.X) / absSize.X, 0, 1)
-                    cpV = 1 - math.clamp((Mouse.Y - absPos.Y) / absSize.Y, 0, 1)
-                    updateCPColor()
-                    RunService.RenderStepped:Wait()
-                end
+                beginPickerDrag("sv", inp)
             end)
 
             hueBar.InputBegan:Connect(function(inp)
-                if not pickerOpen then return end
-                if inp.UserInputType ~= Enum.UserInputType.MouseButton1 and inp.UserInputType ~= Enum.UserInputType.Touch then return end
-                while pickerOpen and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-                    local absPos = hueBar.AbsolutePosition
-                    local absSize = hueBar.AbsoluteSize
-                    cpH = math.clamp((Mouse.Y - absPos.Y) / absSize.Y, 0, 1)
-                    updateCPColor()
-                    RunService.RenderStepped:Wait()
+                beginPickerDrag("hue", inp)
+            end)
+
+            -- Mirror the robust drag architecture already used by Skyfall's
+            -- sliders: begin -> InputChanged -> InputEnded.  For touch, track
+            -- the exact InputObject so another finger cannot hijack the picker.
+            bindPickerConnection(UserInputService.InputChanged, function(inp)
+                if removed or not pickerOpen or not dragTarget then return end
+
+                if dragTouch then
+                    if inp == dragTouch and inp.UserInputType == Enum.UserInputType.Touch then
+                        updateDragAt(inp.Position)
+                    end
+                elseif inp.UserInputType == Enum.UserInputType.MouseMovement then
+                    updateDragAt(inp.Position)
+                end
+            end)
+
+            bindPickerConnection(UserInputService.InputEnded, function(inp)
+                if removed or not dragTarget then return end
+
+                if dragTouch then
+                    if inp == dragTouch then
+                        stopPickerDrag()
+                    end
+                elseif inp.UserInputType == Enum.UserInputType.MouseButton1 then
+                    stopPickerDrag()
                 end
             end)
 
@@ -5729,6 +5847,7 @@ function library:Init(key)
 
             local CPFunctions = {}
             function CPFunctions:SetColor(color)
+                if typeof(color) ~= "Color3" then return CPFunctions end
                 cpH, cpS, cpV = Color3.toHSV(color)
                 currentColor = color
                 preview.BackgroundColor3 = color
@@ -5741,7 +5860,9 @@ function library:Init(key)
                 return currentColor
             end
             function CPFunctions:Text(new)
-                cpLabel.Text = new or text
+                if not removed then
+                    cpLabel.Text = new or text
+                end
                 return CPFunctions
             end
             function CPFunctions:SetFunction(new)
@@ -5749,20 +5870,39 @@ function library:Init(key)
                 return CPFunctions
             end
             function CPFunctions:Hide()
-                cpFrame.Visible = false
+                -- Hiding a picker must also hide/release its detached popup.
+                closePopup()
+                if not removed then
+                    cpFrame.Visible = false
+                end
                 return CPFunctions
             end
             function CPFunctions:Show()
-                cpFrame.Visible = true
+                if not removed then
+                    cpFrame.Visible = true
+                end
                 return CPFunctions
             end
             function CPFunctions:Remove()
-                cpFrame:Destroy()
-                popup:Destroy()
+                if removed then return CPFunctions end
+
+                closePopup()
+                removed = true
+
+                for _, connection in ipairs(pickerConnections) do
+                    pcall(function() connection:Disconnect() end)
+                end
+                table.clear(pickerConnections)
+
+                if cpFrame.Parent then cpFrame:Destroy() end
+                if popup.Parent then popup:Destroy() end
                 return CPFunctions
             end
             function CPFunctions:Flag(name)
-                library:RegisterFlag(name, function() return currentColor end, function(val) CPFunctions:SetColor(val); pcall(function() callback(val) end) end, "color")
+                library:RegisterFlag(name, function() return currentColor end, function(val)
+                    CPFunctions:SetColor(val)
+                    pcall(function() callback(val) end)
+                end, "color")
                 return CPFunctions
             end
             return CPFunctions
