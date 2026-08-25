@@ -364,13 +364,8 @@ end
 
 function library:TabSubtitle(titleText)
     local key = tostring(titleText or ""):lower()
-    if key:find("play", 1, true) then return "Automation & gameplay controls" end
-    if key:find("visual", 1, true) then return "ESP & visual presentation" end
-    if key:find("webhook", 1, true) then return "External notifications & integrations" end
-    if key:find("info", 1, true) then return "Session & build information" end
-    if key:find("setting", 1, true) then return "Interface & behavior preferences" end
-    if key:find("config", 1, true) then return "Save & restore your profiles" end
-    return "Skyfall controls"
+    local subtitle = self.tabSubtitles and self.tabSubtitles[key]
+    return subtitle or self.defaultTabSubtitle or ""
 end
 
 function library:AddSoftGlow(parent, transparency, padding, color, zIndex)
@@ -2113,7 +2108,7 @@ function library:Init(key)
     contentSubtitle.Position = UDim2.new(0, 18, 0, 34)
     contentSubtitle.Size = UDim2.new(1, -138, 0, 17)
     contentSubtitle.Font = Enum.Font.Gotham
-    contentSubtitle.Text = "Skyfall controls"
+    contentSubtitle.Text = ""
     contentSubtitle.TextColor3 = library.textMuted
     contentSubtitle.TextSize = 10
     contentSubtitle.TextXAlignment = Enum.TextXAlignment.Left
