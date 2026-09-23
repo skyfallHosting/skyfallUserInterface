@@ -112,6 +112,8 @@ library = {
     glowAsset = nil,
     noiseAsset = nil,
     _lucideIcons = {},
+    hasStyledSubTabs = true,   -- NewSubTabGroup draws its own pill row
+    hasKeybindUnbind = true,   -- AddKeybind supports unbound + config saving
     _screenGuis = {},
     _connections = {},
     _cornerGui = nil,
@@ -598,17 +600,8 @@ function library:Watermark(text)
 
     if text == nil then
         local watermarkTitle = tostring(library.title or "")
-    
-        watermarkTitle = watermarkTitle:gsub(
-            "^%s*[Ss][Kk][Yy][Ff][Aa][Ll][Ll]%s*[•·|]%s*",
-            ""
-        )
-    
-        watermarkTitle = watermarkTitle:gsub(
-            "%s*[•·|]%s*v%d[%d%.]*%s*$",
-            ""
-        )
-    
+        watermarkTitle = watermarkTitle:gsub("^%s*[Ss][Kk][Yy][Ff][Aa][Ll][Ll]%s*[•·|]%s*", "")
+        watermarkTitle = watermarkTitle:gsub("%s*[•·|]%s*v%d[%d%.]*%s*$", "")
         text = tostring(library.watermarkBrand or "SKYFALL")
             .. "  •  " .. watermarkTitle
             .. "  •  " .. tostring(library.scriptVersion or ("v" .. tostring(library.version)))
@@ -3218,6 +3211,7 @@ function library:Init(key)
             end
             --
             local callback_t
+            local keybindState
             function ToggleFunctions:SetFunction(new)
                 new = new or function() end
                 callback = new
@@ -3229,7 +3223,9 @@ function library:Init(key)
             function ToggleFunctions:AddKeybind(default_t)
                 if isMobile then return ToggleFunctions end
                 callback_t = callback
-                default_t = default_t or Enum.KeyCode.P
+                -- Unbound by default: a toggle should never steal a key the
+                -- game uses just because a keybind chip was added to it.
+                default_t = default_t or {Name = "Unbound"}
 
                 local keybind = Instance.new("TextButton")
                 local keybindCorner = Instance.new("UICorner")
@@ -3321,43 +3317,90 @@ function library:Init(key)
                 ResizeKeybind()
                 UpdatePageSize()
     
-                local ChosenKey = default_t.Name
+                local UNBOUND = "Unbound"
+                local ChosenKey = default_t.Name or UNBOUND
                 local changingKey = false
 
+                -- Mouse buttons report KeyCode.Name "None" in current Roblox
+                -- builds. Matching on the name alone meant an unbound chip
+                -- fired on every click, so binds are keyboard-only and the
+                -- resting state is a name no input can produce.
+                local function isBound()
+                    return ChosenKey ~= UNBOUND and ChosenKey ~= "None" and ChosenKey ~= "Unknown"
+                end
+
+                local function renderKey()
+                    keybindButtonLabel.Text = Shortcuts[ChosenKey] or ChosenKey
+                end
+
+                local function setKey(name)
+                    if typeof(name) == "EnumItem" then name = name.Name end
+                    if type(name) == "table" then name = name.Name end
+                    ChosenKey = (name == nil or name == "") and UNBOUND or tostring(name)
+                    renderKey()
+                end
+                renderKey()
+
                 keybind.MouseButton1Click:Connect(function()
+                    if changingKey then return end
                     changingKey = true
                     keybindButtonLabel.Text = ". . ."
-                    local InputWait = UserInputService.InputBegan:wait()
-                    if UserInputService.WindowFocused and InputWait.KeyCode.Name ~= "Unknown" then
-                        local Result = Shortcuts[InputWait.KeyCode.Name] or InputWait.KeyCode.Name
-                        keybindButtonLabel.Text = Result
-                        ChosenKey = InputWait.KeyCode.Name
-                    end
-                    task.defer(function() changingKey = false end)
+                    local conn
+                    conn = UserInputService.InputBegan:Connect(function(input)
+                        if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+                        conn:Disconnect()
+                        local name = input.KeyCode.Name
+                        if name == "Escape" or name == "Backspace" or name == "Delete" then
+                            setKey(nil)
+                        elseif name ~= "Unknown" then
+                            setKey(name)
+                        else
+                            renderKey()
+                        end
+                        task.defer(function() changingKey = false end)
+                    end)
+                    table.insert(library._connections, conn)
+                end)
+
+                -- Right click clears a bind.
+                keybind.MouseButton2Click:Connect(function()
+                    if changingKey then return end
+                    setKey(nil)
                 end)
 
                 local ChatTextBox
                 pcall(function() ChatTextBox = Player.PlayerGui.Chat.Frame.ChatBarParentFrame.Frame.BoxFrame.Frame.ChatBar end)
-                if UserInputService.WindowFocused then
-                    table.insert(library._connections, UserInputService.InputBegan:Connect(function(c, p)
-                        if changingKey then return end
-                        if not p then
-                            if c.KeyCode.Name == ChosenKey and (not ChatTextBox or not ChatTextBox:IsFocused()) then
-                                On = not On
-                                renderToggle(true)
-                                notifyToggle(On)
-                                callback_t(On)
-                                return
-                            end
-                        end
-                    end))
-                end
+                -- Always connected. Gating this on WindowFocused at build
+                -- time silently killed every keybind when a script was
+                -- executed while the game window was in the background.
+                table.insert(library._connections, UserInputService.InputBegan:Connect(function(c, p)
+                    if changingKey or p or not isBound() then return end
+                    if c.UserInputType ~= Enum.UserInputType.Keyboard then return end
+                    if c.KeyCode.Name ~= ChosenKey then return end
+                    if ChatTextBox and ChatTextBox:IsFocused() then return end
+                    if UserInputService:GetFocusedTextBox() then return end
+                    On = not On
+                    renderToggle(true)
+                    notifyToggle(On)
+                    callback_t(On)
+                end))
+
+                -- Picked up by ToggleFunctions:Flag so the key saves with the
+                -- config under "<flag>_Key".
+                keybindState = {get = function() return ChosenKey end, set = setKey}
     
                 local ExtraKeybindFunctions = {}
                 function ExtraKeybindFunctions:SetKey(new)
-                    if not new then return ExtraKeybindFunctions end
-                    ChosenKey = new.Name
-                    keybindButtonLabel.Text = Shortcuts[new.Name] or new.Name
+                    setKey(new)
+                    return ExtraKeybindFunctions
+                end
+                --
+                function ExtraKeybindFunctions:GetKey()
+                    return isBound() and ChosenKey or nil
+                end
+                --
+                function ExtraKeybindFunctions:Unbind()
+                    setKey(nil)
                     return ExtraKeybindFunctions
                 end
                 --
@@ -3386,6 +3429,11 @@ function library:Init(key)
 
             function ToggleFunctions:Flag(name)
                 library:RegisterFlag(name, function() return On end, function(v) ToggleFunctions:Set(v) end, "toggle")
+                -- Chained after AddKeybind, the chosen key saves and loads
+                -- with the config too.
+                if keybindState then
+                    library:RegisterFlag(name .. "_Key", keybindState.get, keybindState.set, "keybind")
+                end
                 return ToggleFunctions
             end
 
@@ -6018,33 +6066,60 @@ function library:Init(key)
             subTabContainerLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
             subTabContainerLayout.Padding = UDim.new(0, 0)
 
+            -- Inset track, not the old flat grey bar.
             local subTabButtonRow = Instance.new("Frame")
             subTabButtonRow.Name = "subTabButtonRow"
             subTabButtonRow.Parent = subTabContainer
-            subTabButtonRow.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            subTabButtonRow.Size = UDim2.new(1, 0, 0, 24)
+            subTabButtonRow.BackgroundColor3 = Color3.fromRGB(15, 16, 23)
+            subTabButtonRow.BackgroundTransparency = 0.2
+            subTabButtonRow.Size = UDim2.new(1, 0, 0, 30)
             subTabButtonRow.LayoutOrder = 0
             subTabButtonRow.ClipsDescendants = true
 
             local subTabButtonRowCorner = Instance.new("UICorner")
-            subTabButtonRowCorner.CornerRadius = UDim.new(0, 2)
+            subTabButtonRowCorner.CornerRadius = UDim.new(0, 9)
             subTabButtonRowCorner.Parent = subTabButtonRow
+
+            local subTabButtonRowStroke = Instance.new("UIStroke")
+            subTabButtonRowStroke.Color = library.strokeColor or library.accentColor
+            subTabButtonRowStroke.Transparency = 0.72
+            subTabButtonRowStroke.Thickness = 1
+            subTabButtonRowStroke.Parent = subTabButtonRow
+
+            -- The active-group pill. It belongs to the ROW, not the inner
+            -- frame: the inner frame's UIListLayout would lay it out as
+            -- another button.
+            local subTabPill = Instance.new("Frame")
+            subTabPill.Name = "subTabPill"
+            subTabPill.Parent = subTabButtonRow
+            subTabPill.AnchorPoint = Vector2.new(0, 0.5)
+            subTabPill.Position = UDim2.new(0, 3, 0.5, 0)
+            subTabPill.Size = UDim2.new(0, 0, 0, 22)
+            subTabPill.BackgroundColor3 = library.accentColor
+            subTabPill.BackgroundTransparency = 0.82
+            subTabPill.BorderSizePixel = 0
+            subTabPill.ZIndex = 0
+
+            local subTabPillCorner = Instance.new("UICorner")
+            subTabPillCorner.CornerRadius = UDim.new(0, 7)
+            subTabPillCorner.Parent = subTabPill
+
+            local subTabPillStroke = Instance.new("UIStroke")
+            subTabPillStroke.Color = library.accentColor
+            subTabPillStroke.Transparency = 0.45
+            subTabPillStroke.Thickness = 1
+            subTabPillStroke.Parent = subTabPill
 
             local subTabButtonRowInner = Instance.new("Frame")
             subTabButtonRowInner.Name = "subTabButtonRowInner"
             subTabButtonRowInner.Parent = subTabButtonRow
             subTabButtonRowInner.AnchorPoint = Vector2.new(0.5, 0.5)
-            subTabButtonRowInner.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            subTabButtonRowInner.BackgroundTransparency = 1
             subTabButtonRowInner.Position = UDim2.new(0.5, 0, 0.5, 0)
-            subTabButtonRowInner.Size = UDim2.new(1, -2, 0, 22)
-
-            local subTabButtonRowInnerGradient = Instance.new("UIGradient")
-            subTabButtonRowInnerGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(34, 34, 34)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(28, 28, 28))}
-            subTabButtonRowInnerGradient.Rotation = 90
-            subTabButtonRowInnerGradient.Parent = subTabButtonRowInner
+            subTabButtonRowInner.Size = UDim2.new(1, -6, 0, 24)
 
             local subTabButtonRowInnerCorner = Instance.new("UICorner")
-            subTabButtonRowInnerCorner.CornerRadius = UDim.new(0, 2)
+            subTabButtonRowInnerCorner.CornerRadius = UDim.new(0, 7)
             subTabButtonRowInnerCorner.Parent = subTabButtonRowInner
 
             local subTabButtonLayout = Instance.new("UIListLayout")
@@ -6070,6 +6145,27 @@ function library:Init(key)
             local subTabPages = {}
             local activeSubTab = nil
 
+            CreateTween("subtab_pill", 0.18)
+
+            -- Absolute sizes are zero until the first layout pass, so an
+            -- instant move is used for the opening group and on resize.
+            local function slidePill(btn, instant)
+                if not btn or btn.AbsoluteSize.X <= 0 then return end
+                local goal = {
+                    Position = UDim2.new(0, btn.AbsolutePosition.X - subTabButtonRow.AbsolutePosition.X, 0.5, 0),
+                    Size = UDim2.new(0, btn.AbsoluteSize.X, 0, 22),
+                }
+                if instant then
+                    subTabPill.Position, subTabPill.Size = goal.Position, goal.Size
+                else
+                    TweenService:Create(subTabPill, TweenTable["subtab_pill"], goal):Play()
+                end
+            end
+
+            subTabButtonRow:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+                slidePill(subTabButtons[activeSubTab], true)
+            end)
+
             local function switchSubTab(name)
                 if activeSubTab == name then return end
                 activeSubTab = name
@@ -6077,9 +6173,10 @@ function library:Init(key)
                     if n == name then
                         TweenService:Create(btn, TweenTable["subtab_text"], {TextColor3 = library.accentColor}):Play()
                     else
-                        TweenService:Create(btn, TweenTable["subtab_text"], {TextColor3 = Color3.fromRGB(170, 170, 170)}):Play()
+                        TweenService:Create(btn, TweenTable["subtab_text"], {TextColor3 = library.textMuted}):Play()
                     end
                 end
+                slidePill(subTabButtons[name])
                 for n, pg in pairs(subTabPages) do
                     pg.Visible = (n == name)
                 end
@@ -6097,10 +6194,11 @@ function library:Init(key)
                 subBtn.BackgroundTransparency = 1
                 subBtn.Size = UDim2.new(btnScale, -1, 0, 22)
                 subBtn.AutoButtonColor = false
-                subBtn.Font = Enum.Font.Code
+                subBtn.Font = Enum.Font.GothamSemibold
                 subBtn.Text = tabName
-                subBtn.TextColor3 = Color3.fromRGB(170, 170, 170)
-                subBtn.TextSize = 13
+                subBtn.TextColor3 = library.textMuted
+                subBtn.TextSize = 12
+                subBtn.ZIndex = 2
                 subBtn.LayoutOrder = i
                 subBtn.RichText = true
                 subBtn.ClipsDescendants = true
@@ -6145,11 +6243,19 @@ function library:Init(key)
 
                 result[tabName] = subComponents
 
+                subBtn.MouseEnter:Connect(function()
+                    if activeSubTab ~= tabName then subBtn.TextColor3 = Color3.fromRGB(215, 215, 225) end
+                end)
+                subBtn.MouseLeave:Connect(function()
+                    if activeSubTab ~= tabName then subBtn.TextColor3 = library.textMuted end
+                end)
+
                 if isFirstSub then
                     isFirstSub = false
                     activeSubTab = tabName
                     subPage.Visible = true
                     subBtn.TextColor3 = library.accentColor
+                    task.defer(function() slidePill(subBtn, true) end)
                 end
             end
 
